@@ -10,7 +10,9 @@ FAMILY = "Luciole Mono"
 STYLE = "Regular"
 PS_NAME = "LucioleMono-Regular"
 ZERO_WIDTH = ("NULL", ".null")
-NARROW_REDESIGN = ["i", "j", "l", "I", "one", "r", "f", "t", "dotlessi", "dotlessj"]
+# Redessinés en coordonnées de cellule par lib/narrow.py (pas de recentrage).
+# I, 1, f, t : le dessin de Luciole les distingue déjà, gardés tels quels.
+NARROW_REDESIGN = ["i", "j", "l", "r", "dotlessi", "dotlessj"]
 STAGE1 = "build/stage1.ttf"
 CONDENSE_EXTEND = ["m"]          # glyphes à fûts verticaux purs
 EMBOLDEN = 0.6                   # part de l'amincissement compensée (1 = traits verticaux)

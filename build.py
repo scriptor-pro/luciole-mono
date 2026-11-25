@@ -13,6 +13,7 @@ sys.path.insert(0, HERE)
 
 import config  # noqa: E402
 from lib.classify import classify  # noqa: E402
+from lib import narrow  # noqa: E402
 
 
 def ink_width(glyph):
@@ -108,7 +109,13 @@ def center(glyph):
 
 def main():
     font = fontforge.open(config.SOURCE)
+    narrow.slashed_zero(font)
+    for redesign in (narrow.redesign_i, narrow.redesign_j,
+                     narrow.redesign_l, narrow.redesign_r):
+        redesign(font, STEM, config.CELL)
     for glyph in font.glyphs():
+        if glyph.glyphname in config.NARROW_REDESIGN:
+            continue
         if glyph.glyphname in config.ZERO_WIDTH:
             glyph.width = 0
             continue
