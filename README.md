@@ -36,7 +36,7 @@ Les réglages (largeur de cellule, marge, épaississement, réglages propres au 
 
 ## Limites connues
 
-- En gras, la cellule (620) est étroite pour Luciole Bold (son `n` fait 686) : `m`, `M`, `W` et les symboles larges ont des traits plus fins que les autres lettres grasses.
+- En gras, la cellule (620) est étroite pour Luciole Bold (son `n` fait 686) : `m`, `M`, `W` et les symboles larges ont des traits plus fins que les autres lettres grasses : l'épaississement s'arrête avant de boucher leurs encoches (bas du `M`).
 - `⇔` est peu lisible dans les deux graisses.
 - Les italiques débordent un peu de la cellule en haut à droite et en bas à gauche, comme toute italique monospace.
 - `ł`, `į`, `ⁱ` et `ℓ` gardent le dessin d'origine, centré : leur accent est soudé à la lettre dans Luciole.

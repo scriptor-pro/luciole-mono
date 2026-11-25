@@ -5,7 +5,7 @@ from fontTools.ttLib import TTFont
 
 import config
 from conftest import DIST
-from lib.scanline import median_gap, median_stem
+from lib.scanline import gap_rows, median_gap, median_stem
 from render import render
 from stroke import holes
 
@@ -55,7 +55,11 @@ def _ink(path, ch):
 
 # ½ ¾ ¼ ™ № ⇔ → : rares, sans place pour s'épaissir (les flèches ont la même
 # graisse dans les deux sources)
-BOLD_CHECKED = list("mwMW@Œ%‰&#noaeHO0")
+BOLD_CHECKED = list("mw@Œ%‰&#noaeHO0")
+# M et W : leurs encoches étroites ne laissent pas la place d'épaissir sans
+# les boucher (test_wide_glyph_keeps_its_gaps) ; ils restent au moins aussi
+# noirs que le regular.
+BOLD_LIGHT = list("MW")
 
 
 @pytest.mark.skipif(config.STYLE != "Bold", reason="gras seulement")
@@ -64,6 +68,12 @@ def test_bold_heavier_than_regular(ch):
     """Le gras reste visiblement plus noir que le regular, glyphe par glyphe
     (au moins 10 % d'encre en plus)."""
     assert _ink(DIST, ch) >= 1.10 * _ink(REGULAR, ch)
+
+
+@pytest.mark.skipif(config.STYLE != "Bold", reason="gras seulement")
+@pytest.mark.parametrize("ch", _present(BOLD_LIGHT))
+def test_bold_light_glyphs_not_lighter_than_regular(ch):
+    assert _ink(DIST, ch) >= _ink(REGULAR, ch)
 
 
 @pytest.mark.parametrize("ch", _present(WIDE))
@@ -83,3 +93,20 @@ def test_wide_glyph_not_blob(font, source, ch):
 def test_wide_glyph_counters_stay_open(ch):
     """L'épaississement ne bouche aucune contreforme."""
     assert holes(DIST, ch) >= holes(config.SOURCE, ch)
+
+
+# Part des espaces blancs (ligne de balayage × espace) que l'épaississement
+# doit laisser visibles, par rapport à la source simplement réduite. En
+# Regular, les glyphes bien lisibles gardent ≥ 0,57 ; le M gras bouché, 0,24.
+# % et ‰ exclus : leurs anneaux sont réduits exprès (lib/symbols.py).
+KEEP_GAPS = 0.5
+
+
+@pytest.mark.parametrize("ch", _present(WEIGHED))
+def test_wide_glyph_keeps_its_gaps(font, source, ch):
+    """Aucun espace blanc ne disparaît en masse : les encoches étroites
+    (bas du M) comptent autant que les grandes."""
+    mono, src = _flagged(font, ch), _flagged(source, ch)
+    sx = _ink_width(mono) / _ink_width(src)
+    assert gap_rows(mono, MIN_VISIBLE_GAP) >= \
+        KEEP_GAPS * gap_rows(src, MIN_VISIBLE_GAP, sx=sx)

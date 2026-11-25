@@ -30,6 +30,9 @@ I_INK = 1.0                      # largeur d'encre de I (× place)
 # comme 1 et O ; on les resserre pour garder les différences de silhouette.
 STYLE_OVERRIDES = {"Bold": {"ZERO_INK": 0.80, "I_INK": 0.65}}
 GAP_PERCENTILE = 0.75            # espace intérieur pris en compte (formes en coin : w, v)
+VISIBLE_GAP = 17                 # espace blanc encore visible (unités)
+KEEP_GAPS = 0.6                  # part des espaces visibles gardés à l'épaississement
+                                 # (tests : 0,5 ; sans cela le M gras se bouche)
 
 # Italiques : nom PostScript → (droit d'origine, nom de style)
 ITALICS = {"Italic": ("Regular", "Italic"), "BoldItalic": ("Bold", "Bold Italic")}

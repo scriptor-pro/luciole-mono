@@ -16,7 +16,7 @@ from lib.classify import classify  # noqa: E402
 from lib import narrow, symbols  # noqa: E402
 from lib.outline import embolden  # noqa: E402
 from lib.geometry import measure  # noqa: E402
-from lib.scanline import median_gap, median_stem  # noqa: E402
+from lib.scanline import gap_rows, median_gap, median_stem  # noqa: E402
 from fontTools.ttLib import TTFont  # noqa: E402
 from lib.accents import derived_glyphs, split_accent  # noqa: E402
 
@@ -80,14 +80,22 @@ def _contour_count(glyph):
     return len(probe)
 
 
+def _visible_gaps(glyph):
+    return gap_rows(_flagged(glyph), config.VISIBLE_GAP)
+
+
 def _embolden_keeping_counters(glyph, delta):
-    """Épaissit de delta ; si une contreforme se bouche (moins de contours),
-    réessaie avec 75 % de l'épaisseur, jusqu'à renoncer."""
+    """Épaissit de delta ; si une contreforme se bouche (moins de contours)
+    ou si des encoches ouvertes disparaissent (moins de KEEP_GAPS des espaces
+    visibles, comme le bas du M), réessaie avec 75 % de l'épaisseur, jusqu'à
+    renoncer."""
     target = _contour_count(glyph)
+    gaps = _visible_gaps(glyph)
     saved = glyph.foreground.dup()
     while delta >= 4:
         embolden(glyph, delta, horizontal=True)
-        if _contour_count(glyph) >= target:
+        if (_contour_count(glyph) >= target
+                and _visible_gaps(glyph) >= config.KEEP_GAPS * gaps):
             return
         glyph.foreground = saved.dup()
         delta *= 0.75

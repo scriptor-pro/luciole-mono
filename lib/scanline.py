@@ -81,3 +81,12 @@ def median_stem(contours):
     runs = [min(xs[j + 1] - xs[j] for j in range(0, len(xs) - 1, 2))
             for xs in _scan(contours) if len(xs) >= 2]
     return round(statistics.median(runs)) if runs else None
+
+
+def gap_rows(contours, min_width, sx=1.0):
+    """Nombre de couples (ligne de balayage, espace blanc intérieur) dont la
+    largeur, multipliée par sx, atteint min_width. Contrairement à un
+    centile, une encoche étroite qui se bouche fait baisser le compte."""
+    return sum(1 for xs in _scan(contours)
+               for j in range(1, len(xs) - 1, 2)
+               if (xs[j + 1] - xs[j]) * sx >= min_width)

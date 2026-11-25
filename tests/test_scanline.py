@@ -46,3 +46,11 @@ def test_gap_percentile_on_wedge():
     right = [(340, 400, True), (400, 400, True), (300, 0, True), (240, 0, True)]
     assert 170 <= median_gap([left, right]) <= 190
     assert 220 <= median_gap([left, right], q=0.75) <= 240
+
+
+def test_gap_rows_counts_every_gap_wide_enough():
+    from lib.scanline import gap_rows
+    two_gaps = [_rect(0, 0, 10, 100), _rect(30, 0, 40, 100), _rect(45, 0, 55, 100)]
+    assert gap_rows(two_gaps, 10) == 39          # seul l'espace de 20 compte
+    assert gap_rows(two_gaps, 4) == 2 * 39
+    assert gap_rows(two_gaps, 10, sx=0.4) == 0   # 20 × 0,4 = 8 < 10
