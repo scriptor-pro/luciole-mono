@@ -35,7 +35,7 @@ La logique pure (classement des glyphes, appariement des contours pour les accen
 
 ---
 
-### Tâche 1 : squelette, construction minimale et tests de conformité mono
+### Task 1: squelette, construction minimale et tests de conformité mono
 
 **Fichiers :**
 - Créer : `luciole-mono/Makefile`, `luciole-mono/requirements.txt`, `luciole-mono/.gitignore`, `luciole-mono/config.py`, `luciole-mono/build.py`, `luciole-mono/finalize.py`, `luciole-mono/lib/__init__.py`, `luciole-mono/lib/classify.py`
@@ -99,7 +99,7 @@ def test_fontconfig_sees_mono():
 - [ ] **Étape 8 :** lancer `make all`. Résultat attendu : tous les tests passent.
 - [ ] **Étape 9 : commit** `feat(luciole-mono): construction mono minimale et tests de conformité`
 
-### Tâche 2 : planches de contrôle visuel
+### Task 2: planches de contrôle visuel
 
 **Fichiers :**
 - Créer : `luciole-mono/specimen.py`, `luciole-mono/tests/render.py`
@@ -131,7 +131,7 @@ def test_ink_runs_n_has_two_stems():
 - [ ] **Étape 4 :** lancer `make all specimen`. Résultat attendu : les tests passent et les quatre PNG existent. **Montrer `alphabet.png` et `confusables.png` à l'utilisateur** : c'est le point de référence avant les améliorations.
 - [ ] **Étape 5 : commit** `feat(luciole-mono): planches de contrôle`
 
-### Tâche 3 : compression des glyphes larges en conservant la graisse
+### Task 3: compression des glyphes larges en conservant la graisse
 
 **Fichiers :**
 - Modifier : `luciole-mono/build.py` (traitement des glyphes `wide`)
@@ -157,7 +157,7 @@ Le coefficient 1,07 tient compte du fait que les capitales de Luciole ont des f�
 - [ ] **Étape 4 :** lancer `make all specimen`. Résultat attendu : tous les tests passent. Regarder `alphabet.png` : `m`, `w`, `M`, `W`, `%` et `‰` doivent être reconnaissables et de même graisse que leurs voisins.
 - [ ] **Étape 5 : commit** `feat(luciole-mono): compression des glyphes larges sans perte de graisse`
 
-### Tâche 4 : redessin des lettres étroites et zéro barré
+### Task 4: redessin des lettres étroites et zéro barré
 
 **Fichiers :**
 - Créer : `luciole-mono/lib/narrow.py` (fonctions FontForge de dessin)
@@ -199,7 +199,7 @@ def test_zero_is_slashed(font, source):
 - [ ] **Étape 4 :** lancer `make all specimen`. Résultat attendu : tous les tests passent. **Montrer `confusables.png` et `code.png` à l'utilisateur** et ajuster les valeurs d'après ses remarques avant de commiter.
 - [ ] **Étape 5 : commit** `feat(luciole-mono): empattements des lettres étroites, zéro barré`
 
-### Tâche 5 : les lettres accentuées suivent les bases redessinées
+### Task 5: les lettres accentuées suivent les bases redessinées
 
 **Fichiers :**
 - Créer : `luciole-mono/lib/accents.py`
@@ -231,7 +231,7 @@ def test_accented_follow_redesigned_base(font, ch, base):
 - [ ] **Étape 4 :** lancer `make all specimen`. Résultat attendu : tous les tests passent, et le rapport liste les glyphes non appariés. Ajouter à `alphabet.png` une ligne `íìîïĩīĭįĵĺļľŀłŕŗřţťŧÍÌÎÏ` et la vérifier.
 - [ ] **Étape 5 : commit** `feat(luciole-mono): lettres accentuées reconstruites sur les bases redessinées`
 
-### Tâche 6 : README, installation et validation par l'utilisateur
+### Task 6: README, installation et validation par l'utilisateur
 
 **Fichiers :**
 - Créer : `luciole-mono/README.md`
