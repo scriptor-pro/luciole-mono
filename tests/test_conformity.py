@@ -13,7 +13,9 @@ def test_every_glyph_is_cell_width(font):
 
 
 def test_same_codepoints_as_source(font, source):
-    assert set(font.getBestCmap()) == set(source.getBestCmap())
+    """Mêmes caractères que la source, plus les espaces insécables ajoutées."""
+    assert set(font.getBestCmap()) - set(source.getBestCmap()) <= {0x00A0, 0x202F}
+    assert set(source.getBestCmap()) <= set(font.getBestCmap())
 
 
 def test_fixed_pitch_metadata(font):

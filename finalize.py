@@ -23,7 +23,8 @@ def set_names(font):
         4: full, 6: config.PS_NAME, 16: config.FAMILY, 17: config.STYLE,
         13: f"{license_text}\n\n{MODIFIED}",
     }
-    name.names = [r for r in name.names if r.nameID not in values]
+    # 18 (nom complet Mac) disait encore « Luciole Regular »
+    name.names = [r for r in name.names if r.nameID not in values and r.nameID != 18]
     for name_id, value in values.items():
         name.setName(value, name_id, 3, 1, 0x409)
         name.setName(value, name_id, 1, 0, 0)
@@ -72,6 +73,17 @@ def fix_added_empty_glyphs(font):
             hmtx[name] = (config.CELL, 0)
 
 
+# Espaces insécables absentes des tables Unicode de la source (seulement Mac)
+NO_BREAK_SPACES = (0x00A0, 0x202F)
+
+
+def map_no_break_spaces(font):
+    for table in font["cmap"].tables:
+        if table.isUnicode():
+            for code in NO_BREAK_SPACES:
+                table.cmap.setdefault(code, "space")
+
+
 def set_mono_metadata(font):
     font["post"].isFixedPitch = 1
     font["OS/2"].panose.bProportion = 9
@@ -85,6 +97,7 @@ def main():
     drop_features(font, "GSUB", {"liga"})
     strip_hinting(font)
     fix_added_empty_glyphs(font)
+    map_no_break_spaces(font)
     set_mono_metadata(font)
     os.makedirs(os.path.join(HERE, "dist"), exist_ok=True)
     font.save(os.path.join(HERE, "dist", f"{config.PS_NAME}.ttf"))

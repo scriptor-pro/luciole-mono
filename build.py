@@ -148,7 +148,11 @@ def main():
     for redesign in (narrow.redesign_i, narrow.redesign_j,
                      narrow.redesign_l, narrow.redesign_r):
         redesign(font, STEM, config.CELL)
+    # locl tr/az/crh : i → idotaccent, qui doit suivre le nouveau i
+    font["idotaccent"].foreground = font["i"].foreground.dup()
+    font["idotaccent"].width = config.CELL
     rebuilt, unmatched = rebuild_accented(font, originals)
+    rebuilt.append("idotaccent")
     print(f"accents reconstruits : {len(rebuilt)} ; non appariés (centrés) : "
           f"{', '.join(unmatched) or 'aucun'}")
     skip = set(config.NARROW_REDESIGN) | set(rebuilt)

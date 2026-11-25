@@ -112,6 +112,7 @@ def slashed_zero(font):
     """Le zéro barré d'origine (feature zero) devient le zéro par défaut."""
     for name in list(font):
         if name.startswith("zero.slash"):
-            target = "zero" + name[len("zero.slash"):]
+            suffix = name[len("zero.slash"):]          # "", "LP", "osf"…
+            target = "zero" + ("." + suffix if suffix else "")
             if target in font:
                 font[target].foreground = font[name].foreground.dup()
