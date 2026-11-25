@@ -14,6 +14,7 @@ sys.path.insert(0, HERE)
 import config  # noqa: E402
 from lib.classify import classify  # noqa: E402
 from lib import narrow  # noqa: E402
+from lib.accents import derived_glyphs, split_accent  # noqa: E402
 
 
 def ink_width(glyph):
@@ -107,14 +108,52 @@ def center(glyph):
     glyph.width = config.CELL
 
 
+def _points(contours):
+    return [[(round(p.x), round(p.y)) for p in c] for c in contours]
+
+
+def rebuild_accented(font, originals):
+    """Reconstruit chaque lettre accentuée sur sa base redessinée : contours de
+    l'accent d'origine, décalés comme le fût de la base. Renvoie (reconstruits,
+    non appariés)."""
+    cmap = {g.unicode: g.glyphname for g in font.glyphs() if g.unicode > 0}
+    rebuilt, unmatched = [], []
+    for name, base in sorted(derived_glyphs(cmap, set(originals)).items()):
+        glyph = font[name]
+        contours = list(glyph.foreground)
+        points = _points(contours)
+        accent, dx = split_accent(points, _points(originals[base]))
+        if dx is None:
+            unmatched.append(name)
+            continue
+        shift = narrow.STEM_CENTER[base] - (narrow.OLD_STEM_CENTER + dx)
+        layer = font[base].foreground.dup()
+        for pts, contour in zip(points, contours):
+            if any(pts is a for a in accent):
+                moved = contour.dup()
+                moved.transform(psMat.translate(shift, 0))
+                layer += moved
+        glyph.foreground = layer
+        glyph.correctDirection()
+        glyph.round()
+        glyph.width = config.CELL
+        rebuilt.append(name)
+    return rebuilt, unmatched
+
+
 def main():
     font = fontforge.open(config.SOURCE)
     narrow.slashed_zero(font)
+    originals = {b: [c.dup() for c in font[b].foreground] for b in narrow.STEM_CENTER}
     for redesign in (narrow.redesign_i, narrow.redesign_j,
                      narrow.redesign_l, narrow.redesign_r):
         redesign(font, STEM, config.CELL)
+    rebuilt, unmatched = rebuild_accented(font, originals)
+    print(f"accents reconstruits : {len(rebuilt)} ; non appariés (centrés) : "
+          f"{', '.join(unmatched) or 'aucun'}")
+    skip = set(config.NARROW_REDESIGN) | set(rebuilt)
     for glyph in font.glyphs():
-        if glyph.glyphname in config.NARROW_REDESIGN:
+        if glyph.glyphname in skip:
             continue
         if glyph.glyphname in config.ZERO_WIDTH:
             glyph.width = 0

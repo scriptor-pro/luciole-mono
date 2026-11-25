@@ -7,6 +7,9 @@ import psMat
 BAR = 96          # épaisseur des empattements = barre horizontale du t
 SERIF = 124       # longueur de l'empattement d'attaque au-delà du fût
 XH, ASC = 545, 791
+OLD_STEM_CENTER = 146     # centre du fût de ı, ȷ, l, r dans la source (90–202)
+# centre du fût après redessin (doit suivre les fonctions redesign_*)
+STEM_CENTER = {"dotlessi": 310, "dotlessj": 396, "l": 270, "r": 230}
 
 
 def _rect(pen, x0, y0, x1, y1):
