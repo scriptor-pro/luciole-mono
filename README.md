@@ -14,6 +14,7 @@ Luciole Mono est une **œuvre dérivée** de Luciole Regular, distribuée sous l
 - les glyphes larges (`m`, `w`, `M`, `W`, `%`, `@`…) sont compressés. Les fûts verticaux de `m` sont conservés (`condenseExtend`), et les autres glyphes sont épaissis à nouveau pour garder leur graisse ;
 - `i`, `j`, `l` et `r` sont redessinés avec des empattements (et une queue courbe pour `l`) pour occuper la cellule et éviter les confusions ;
 - les lettres accentuées sur ces bases sont reconstruites ;
+- `%` et `‰` sont redessinés : leurs anneaux sont réduits mais restent ronds, placés de part et d'autre de la barre oblique ;
 - le zéro barré de Luciole (`zero.slash`) devient le `0` par défaut ;
 - le crénage (`kern`), les ligatures (`liga`) et le hinting TrueType ont été retirés, et les métadonnées sont celles d'une police monospace.
 
@@ -33,7 +34,6 @@ Les réglages (largeur de cellule, marge, épaississement) se trouvent dans `con
 ## Limites connues
 
 - `ł`, `į`, `ⁱ` et `ℓ` gardent le dessin d'origine, centré : leur accent est soudé à la lettre dans Luciole.
-- `‰` est serré : trois anneaux tiennent difficilement dans une cellule.
 
 ## Prochaines étapes
 

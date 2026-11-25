@@ -13,7 +13,8 @@ sys.path.insert(0, HERE)
 
 import config  # noqa: E402
 from lib.classify import classify  # noqa: E402
-from lib import narrow  # noqa: E402
+from lib import narrow, symbols  # noqa: E402
+from lib.outline import embolden  # noqa: E402
 from lib.accents import derived_glyphs, split_accent  # noqa: E402
 
 
@@ -57,29 +58,13 @@ def _contour_count(glyph):
     return len(probe)
 
 
-def _embolden(glyph, delta):
-    """Épaissit chaque trait de delta (delta/2 de chaque côté) avec une plume
-    ronde à jointures en onglet (angles vifs conservés), puis ramène le glyphe
-    à sa hauteur d'origine pour garder ligne de base et hauteur d'x."""
-    _, ymin, _, ymax = glyph.boundingBox()
-    outline = glyph.foreground.dup()
-    glyph.stroke("circular", delta, "butt", "miter")
-    for contour in outline:
-        glyph.foreground += contour
-    glyph.removeOverlap()
-    _, ymin2, _, ymax2 = glyph.boundingBox()
-    sy = (ymax - ymin) / (ymax2 - ymin2)
-    glyph.transform(psMat.compose(psMat.translate(0, -ymin2),
-                                  psMat.compose(psMat.scale(1, sy), psMat.translate(0, ymin))))
-
-
 def _embolden_keeping_counters(glyph, delta):
     """Épaissit de delta ; si une contreforme se bouche (moins de contours),
     réessaie avec 75 % de l'épaisseur, jusqu'à renoncer."""
     target = _contour_count(glyph)
     saved = glyph.foreground.dup()
     while delta >= 4:
-        _embolden(glyph, delta)
+        embolden(glyph, delta)
         if _contour_count(glyph) >= target:
             return
         glyph.foreground = saved.dup()
@@ -144,6 +129,7 @@ def rebuild_accented(font, originals):
 def main():
     font = fontforge.open(config.SOURCE)
     narrow.slashed_zero(font)
+    symbols.redesign_percents(font, config.CELL)
     originals = {b: [c.dup() for c in font[b].foreground] for b in narrow.STEM_CENTER}
     for redesign in (narrow.redesign_i, narrow.redesign_j,
                      narrow.redesign_l, narrow.redesign_r):
@@ -155,7 +141,7 @@ def main():
     rebuilt.append("idotaccent")
     print(f"accents reconstruits : {len(rebuilt)} ; non appariés (centrés) : "
           f"{', '.join(unmatched) or 'aucun'}")
-    skip = set(config.NARROW_REDESIGN) | set(rebuilt)
+    skip = set(config.NARROW_REDESIGN) | set(rebuilt) | set(symbols.REDESIGNED)
     for glyph in font.glyphs():
         if glyph.glyphname in skip:
             continue
