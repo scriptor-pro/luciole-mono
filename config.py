@@ -2,9 +2,13 @@
 import os
 
 # Graisse construite : LUCIOLE_STYLE=Regular|Bold (le Makefile fait les deux)
+# Italic et BoldItalic sont produits par italicize.py à partir des droits ;
+# leur STYLE ne sert qu'aux planches (comparaison avec la source).
 STYLE = os.environ.get("LUCIOLE_STYLE", "Regular")
+SOURCE_FILE = {"BoldItalic": "Bold_Italic"}
 SOURCE = os.path.expanduser(
-    f"~/.local/share/fonts/typographies.fr/TrueType/Luciole/Luciole_{STYLE}.ttf")
+    "~/.local/share/fonts/typographies.fr/TrueType/Luciole/"
+    f"Luciole_{SOURCE_FILE.get(STYLE, STYLE)}.ttf")
 CELL = 620
 NEAR_TOLERANCE = 0.10
 MARGIN = 30                      # approche minimale des glyphes compressés
@@ -26,5 +30,10 @@ I_INK = 1.0                      # largeur d'encre de I (× place)
 # comme 1 et O ; on les resserre pour garder les différences de silhouette.
 STYLE_OVERRIDES = {"Bold": {"ZERO_INK": 0.80, "I_INK": 0.65}}
 GAP_PERCENTILE = 0.75            # espace intérieur pris en compte (formes en coin : w, v)
+
+# Italiques : nom PostScript → (droit d'origine, nom de style)
+ITALICS = {"Italic": ("Regular", "Italic"), "BoldItalic": ("Bold", "Bold Italic")}
+SLANT = 15                       # degrés, comme Luciole Italic
+SLANT_Y0 = 385                   # hauteur fixe de l'inclinaison (n : 90 → −13 dans Luciole)
 
 globals().update(STYLE_OVERRIDES.get(STYLE, {}))   # en dernier

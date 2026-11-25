@@ -1,4 +1,5 @@
 STYLES = Regular Bold
+ITALICS = Italic BoldItalic
 .PHONY: build test all specimen install
 
 build:
@@ -7,6 +8,7 @@ build:
 	  LUCIOLE_STYLE=$$s fontforge -quiet -script build.py || exit 1; \
 	  LUCIOLE_STYLE=$$s .venv/bin/python finalize.py || exit 1; \
 	done
+	@echo "== $(ITALICS)"; .venv/bin/python italicize.py
 
 test:
 	@for s in $(STYLES); do \
@@ -16,7 +18,7 @@ test:
 all: build test
 
 specimen:
-	@for s in $(STYLES); do \
+	@for s in $(STYLES) $(ITALICS); do \
 	  LUCIOLE_STYLE=$$s .venv/bin/python specimen.py specimens/$$s || exit 1; \
 	done
 
