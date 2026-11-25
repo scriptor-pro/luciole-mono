@@ -1,18 +1,26 @@
+STYLES = Regular Bold
 .PHONY: build test all specimen install
 
 build:
-	fontforge -quiet -script build.py
-	.venv/bin/python finalize.py
+	@for s in $(STYLES); do \
+	  echo "== $$s"; \
+	  LUCIOLE_STYLE=$$s fontforge -quiet -script build.py || exit 1; \
+	  LUCIOLE_STYLE=$$s .venv/bin/python finalize.py || exit 1; \
+	done
 
 test:
-	.venv/bin/pytest -q
+	@for s in $(STYLES); do \
+	  echo "== $$s"; LUCIOLE_STYLE=$$s .venv/bin/pytest -q || exit 1; \
+	done
 
 all: build test
 
 specimen:
-	.venv/bin/python specimen.py
+	@for s in $(STYLES); do \
+	  LUCIOLE_STYLE=$$s .venv/bin/python specimen.py specimens/$$s || exit 1; \
+	done
 
 install: build
 	mkdir -p $(HOME)/.local/share/fonts/LucioleMono
-	cp dist/LucioleMono-Regular.ttf $(HOME)/.local/share/fonts/LucioleMono/
+	cp dist/LucioleMono-*.ttf $(HOME)/.local/share/fonts/LucioleMono/
 	fc-cache -f $(HOME)/.local/share/fonts

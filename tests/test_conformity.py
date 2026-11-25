@@ -27,7 +27,8 @@ def test_fixed_pitch_metadata(font):
 def test_names(font):
     n = font["name"]
     assert n.getDebugName(1) == "Luciole Mono"
-    assert n.getDebugName(6) == "LucioleMono-Regular"
+    assert n.getDebugName(6) == config.PS_NAME
+    assert n.getDebugName(2) == config.STYLE
     assert "Bourcellier" in n.getDebugName(13)
     assert "Luciole Mono" in n.getDebugName(13)
 

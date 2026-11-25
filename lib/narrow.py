@@ -1,15 +1,21 @@
-"""Redessin des lettres étroites (FontForge), en coordonnées de cellule (620).
+"""Redessin des lettres étroites (FontForge), en coordonnées de cellule.
 
-Mesures de Luciole Regular : fût 112, barre du t 96, hauteur d'x 545,
-ascendante 791. Les glyphes produits ici ne sont pas recentrés ensuite."""
+Toutes les dimensions viennent de lib.geometry.measure (g) : le même dessin
+s'applique à chaque graisse. Chaque redesign_* renvoie le centre du nouveau
+fût, dont dépend la reconstruction des lettres accentuées."""
+import fontforge
 import psMat
 
-BAR = 96          # épaisseur des empattements = barre horizontale du t
 SERIF = 124       # longueur de l'empattement d'attaque au-delà du fût
-XH, ASC = 545, 791
-OLD_STEM_CENTER = 146     # centre du fût de ı, ȷ, l, r dans la source (90–202)
-# centre du fût après redessin (doit suivre les fonctions redesign_*)
-STEM_CENTER = {"dotlessi": 310, "dotlessj": 396, "l": 270, "r": 230}
+FOOT = 144        # débord du pied de i de chaque côté du fût
+J_CENTER = 396    # centre du fût de ȷ (crochet élargi à gauche)
+L_CENTER = 270    # centre du fût de l (queue à droite)
+R_CENTER = 230    # centre du fût de r (bras à droite)
+
+
+def old_stem_center(g):
+    """Centre du fût de ı, ȷ, l, r dans la source."""
+    return g["stem_left"] + g["stem"] / 2
 
 
 def _rect(pen, x0, y0, x1, y1):
@@ -33,14 +39,9 @@ def _finish(glyph, cell):
     glyph.width = cell
 
 
-def _dot(font, name):
-    """Contours au-dessus de la hauteur d'x (le point de i ou j)."""
-    return [c.dup() for c in font[name].foreground if c.boundingBox()[1] > XH]
-
-
-def _with_dot(font, dotted, dotless, dx, cell):
-    """dotted = dotless redessiné + point d'origine décalé de dx."""
-    dot = _dot(font, dotted)
+def _with_dot(font, dotted, dotless, dx, g, cell):
+    """dotted = dotless redessiné + point d'origine (au-dessus de x) décalé."""
+    dot = [c.dup() for c in font[dotted].foreground if c.boundingBox()[1] > g["xh"]]
     layer = font[dotless].foreground.dup()
     for contour in dot:
         contour.transform(psMat.translate(dx, 0))
@@ -49,63 +50,67 @@ def _with_dot(font, dotted, dotless, dx, cell):
     _finish(font[dotted], cell)
 
 
-def redesign_i(font, stem, cell):
+def redesign_i(font, g, cell):
     """ı : fût centré, attaque à gauche, pied ; i = ı + point."""
-    x0 = (cell - stem) // 2                      # 254
-    g = font["dotlessi"]
-    _rect(g.glyphPen(), x0, 0, x0 + stem, XH)
-    add_serif(g, x0 - SERIF, x0 + stem, XH - BAR, BAR)
-    add_serif(g, cell // 2 - 200, cell // 2 + 200, 0, BAR)
-    _finish(g, cell)
-    _with_dot(font, "i", "dotlessi", x0 - 90, cell)   # fût d'origine à x=90
+    stem, bar, xh = g["stem"], g["bar"], g["xh"]
+    x0 = (cell - stem) // 2
+    glyph = font["dotlessi"]
+    _rect(glyph.glyphPen(), x0, 0, x0 + stem, xh)
+    add_serif(glyph, x0 - SERIF, x0 + stem, xh - bar, bar)
+    half = stem // 2 + FOOT
+    add_serif(glyph, cell // 2 - half, cell // 2 + half, 0, bar)
+    _finish(glyph, cell)
+    _with_dot(font, "i", "dotlessi", x0 - g["stem_left"], g, cell)
+    return x0 + stem / 2
 
 
-def redesign_l(font, stem, cell):
-    """l : attaque à gauche, terminé par la queue courbe du t (décalée)."""
-    dx = 96
-    g = font["l"]
-    pen = g.glyphPen()
-    pen.moveTo((393 + dx, 8))
-    pen.qCurveTo((371 + dx, -1), (317 + dx, -11), (289 + dx, -11))
-    pen.qCurveTo((203 + dx, -11), (118 + dx, 85), (118 + dx, 181))
-    pen.lineTo((118 + dx, ASC - BAR))
-    pen.lineTo((118 + dx - SERIF, ASC - BAR))
-    pen.lineTo((118 + dx - SERIF, ASC))
-    pen.lineTo((230 + dx, ASC))
-    pen.lineTo((230 + dx, 243))
-    pen.qCurveTo((230 + dx, 154), (265 + dx, 90), (313 + dx, 90))
-    pen.qCurveTo((332 + dx, 90), (375 + dx, 98), (393 + dx, 104))
-    pen.closePath()
-    _finish(g, cell)
+def redesign_l(font, g, cell):
+    """l : bas du t (fût et queue courbe), fût prolongé jusqu'à l'ascendante,
+    attaque à gauche."""
+    left, right = g["t_stem"]
+    dx = L_CENTER - (left + right) / 2
+    glyph = font["l"]
+    layer = font["t"].foreground.dup()
+    layer.transform(psMat.translate(dx, 0))
+    glyph.foreground = layer
+    _rect(glyph.glyphPen(replace=False), -1000, -1000, 2000, g["t_bar_bottom"])
+    glyph.intersect()                       # ne garde que le t sous sa barre
+    left, right = left + dx, right + dx
+    add_serif(glyph, left, right, g["t_bar_bottom"] - 1,
+              g["asc"] - g["t_bar_bottom"] + 1)
+    add_serif(glyph, left - SERIF, right, g["asc"] - g["bar"], g["bar"])
+    _finish(glyph, cell)
+    return L_CENTER
 
 
-def redesign_j(font, stem, cell):
+def redesign_j(font, g, cell):
     """ȷ : crochet élargi vers la gauche, attaque à gauche ; j = ȷ + point."""
-    left = 90                                     # bord gauche du fût dans la source
-    dx = 250
-    g = font["dotlessj"]
+    left, stem = g["stem_left"], g["stem"]
+    dx = J_CENTER - stem / 2 - left
+    glyph = font["dotlessj"]
     stretch = psMat.compose(psMat.translate(-left, 0),
                             psMat.compose(psMat.scale(1.6, 1), psMat.translate(left, 0)))
-    layer = g.foreground
+    layer = glyph.foreground
     for contour in layer:
         for point in contour:
             if point.x < left:
                 point.transform(stretch)
-    g.foreground = layer
-    g.transform(psMat.translate(dx, 0))
-    add_serif(g, left + dx - SERIF, left + dx + stem, XH - BAR, BAR)
-    _finish(g, cell)
-    _with_dot(font, "j", "dotlessj", dx, cell)
+    glyph.foreground = layer
+    glyph.transform(psMat.translate(dx, 0))
+    add_serif(glyph, left + dx - SERIF, left + dx + stem, g["xh"] - g["bar"], g["bar"])
+    _finish(glyph, cell)
+    _with_dot(font, "j", "dotlessj", dx, g, cell)
+    return J_CENTER
 
 
-def redesign_r(font, stem, cell):
-    """r : décalé à droite, pied horizontal centré sur le fût."""
-    dx = 84
-    g = font["r"]
-    g.transform(psMat.translate(dx, 0))
-    center = 90 + dx + stem // 2                  # 230
-    add_serif(g, center - 140, center + 160, 0, BAR)
-    _finish(g, cell)
+def redesign_r(font, g, cell):
+    """r : décalé, pied horizontal sous le fût (plus long côté bras)."""
+    stem = g["stem"]
+    glyph = font["r"]
+    glyph.transform(psMat.translate(R_CENTER - stem / 2 - g["stem_left"], 0))
+    add_serif(glyph, R_CENTER - (stem // 2 + 84), R_CENTER + (stem // 2 + 104), 0, g["bar"])
+    _finish(glyph, cell)
+    return R_CENTER
 
 
 def slashed_zero(font):

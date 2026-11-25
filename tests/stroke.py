@@ -1,8 +1,12 @@
 """Épaisseur réelle des traits, quel que soit leur angle (érosion)."""
+from fontTools.ttLib import TTFont
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
+import config
+from lib.geometry import measure
+
 PX = 200          # taille de rendu : 1 unité ≈ 0,2 px
-STEM = 112        # fût de n dans Luciole Regular, en unités
+STEM = measure(TTFont(config.SOURCE))["stem"]   # fût de la graisse testée
 
 
 def stroke_survival(font_path: str, char: str, ratio: float = 0.75) -> float:

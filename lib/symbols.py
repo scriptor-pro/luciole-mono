@@ -1,26 +1,39 @@
 """% et ‰ redessinés pour la cellule (FontForge).
 
-Le % de Luciole fait 1240 unités : comprimé, ses anneaux deviennent des
+Le % de Luciole est très large : comprimé, ses anneaux deviennent des
 ellipses étroites qui forment une tache en petite taille. On réduit plutôt
 les anneaux dans les deux sens (ils restent ronds), on les place en haut à
-gauche et en bas à droite, et on garde la barre oblique au centre."""
-import fontforge
-import psMat
+gauche et en bas à droite, et on garde la barre oblique entre les deux.
+L'épaisseur des anneaux suit la graisse (1 × fût), dans la limite d'une
+contreforme minimale."""
+try:
+    import fontforge
+    import psMat
+except ImportError:          # hors FontForge (tests)
+    fontforge = psMat = None
 
-from lib.outline import embolden
+try:
+    from lib.outline import embolden
+except ImportError:          # hors FontForge (tests)
+    embolden = None
 
 REDESIGNED = ("percent", "perthousand")
-
-# nom → (échelle des anneaux, épaississement des anneaux,
-#        [(indices des contours d'un anneau, (x gauche, y haut))],
-#        indice de la barre, échelle horizontale de la barre, centre de la barre)
-LAYOUTS = {
-    "percent": (0.56, 40, [((0, 2), (40, 770)), ((3, 4), (350, 271))], 1, 0.72, 310),
-    # ‰ : barre à gauche pour laisser passer les deux anneaux du bas
-    "perthousand": (0.4, 30, [((0, 2), (20, 770)), ((3, 5), (205, 220)),
-                              ((4, 6), (400, 220))], 1, 0.6, 190),
-}
+RING_STROKE = 1.0         # épaisseur visée des anneaux, en fraction du fût
 BAR_EMBOLDEN = 14
+
+# nom → dict(largeur finale d'un anneau, contreforme minimale,
+#   anneaux [(indices des contours, "top" ou "bottom", x gauche)],
+#   indice de la barre, échelle horizontale de la barre, centre de la barre)
+LAYOUTS = {
+    "percent": dict(ring_width=270, min_counter=70,
+                    rings=[((0, 2), "top", 40), ((3, 4), "bottom", 350)],
+                    bar=1, bar_scale=0.72, bar_center=310),
+    # ‰ : barre à gauche pour laisser passer les deux anneaux du bas
+    "perthousand": dict(ring_width=194, min_counter=50,
+                        rings=[((0, 2), "top", 20), ((3, 5), "bottom", 205),
+                               ((4, 6), "bottom", 400)],
+                        bar=1, bar_scale=0.6, bar_center=190),
+}
 
 
 def _layer(contours=()):
@@ -31,27 +44,52 @@ def _layer(contours=()):
     return layer
 
 
-def redesign_percents(font, cell):
-    for name, (scale, ring_bold, rings, bar_index, bar_scale, bar_center) in LAYOUTS.items():
+def _width(layer):
+    x0, _, x1, _ = layer.boundingBox()
+    return x1 - x0
+
+
+def ring_scale(outer_width, inner_width, ring_width, target_stroke):
+    """Échelle s et épaississement e pour qu'un anneau mesure ring_width de
+    large et target_stroke d'épaisseur de paroi. Épaissir de e ajoute e à la
+    largeur et e à la paroi : s·W + e = ring_width, s·paroi + e = target_stroke.
+    e ≤ 0 → l'anneau réduit est déjà assez épais, pas d'épaississement."""
+    stroke = (outer_width - inner_width) / 2
+    s = (ring_width - target_stroke) / (outer_width - stroke)
+    return s, ring_width - s * outer_width
+
+
+def redesign_percents(font, stem, cell):
+    for name, lay in LAYOUTS.items():
         glyph = font[name]
         orig = list(glyph.foreground)
+        first_ring = lay["rings"][0][0]
+        target = min(RING_STROKE * stem, (lay["ring_width"] - lay["min_counter"]) / 2)
+        s, e = ring_scale(_width(_layer([orig[first_ring[0]]])),
+                          _width(_layer([orig[first_ring[1]]])),
+                          lay["ring_width"], target)
         parts = _layer()
-        for indices, (left, top) in rings:
+        for indices, anchor, left in lay["rings"]:
             ring = _layer(orig[i] for i in indices)
-            ring.transform(psMat.scale(scale, scale))
-            x0, _, _, y1 = ring.boundingBox()
-            ring.transform(psMat.translate(left - x0, top - y1))
+            _, y0, _, y1 = ring.boundingBox()
+            ring.transform(psMat.scale(s, s))
+            x0, ny0, _, ny1 = ring.boundingBox()
+            dy = (y1 - ny1) if anchor == "top" else (y0 - ny0)
+            ring.transform(psMat.translate(left - x0, dy))
             for c in ring:
                 parts += c
-        bar = _layer([orig[bar_index]])
-        bar.transform(psMat.scale(bar_scale, 1))
+        bar = _layer([orig[lay["bar"]]])
+        bar.transform(psMat.scale(lay["bar_scale"], 1))
         x0, _, x1, _ = bar.boundingBox()
-        bar.transform(psMat.translate(bar_center - (x0 + x1) / 2, 0))
+        bar.transform(psMat.translate(lay["bar_center"] - (x0 + x1) / 2, 0))
+        glyph.foreground = bar                 # la barre seule est épaissie
+        embolden(glyph, BAR_EMBOLDEN)
+        bar = glyph.foreground.dup()
         glyph.foreground = parts
-        embolden(glyph, ring_bold)
+        if e > 2:
+            embolden(glyph, e)
         for c in bar:
             glyph.foreground += c
-        embolden(glyph, BAR_EMBOLDEN)
         glyph.removeOverlap()
         x0, _, x1, _ = glyph.boundingBox()
         glyph.transform(psMat.translate((cell - (x1 - x0)) / 2 - x0, 0))

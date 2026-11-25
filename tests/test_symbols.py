@@ -24,3 +24,12 @@ def test_percent_rings_stay_round(font, name, rings):
     assert len(counters) == rings
     for x0, y0, x1, y1 in counters:
         assert (y1 - y0) / (x1 - x0) <= 2.2, (x0, y0, x1, y1)
+
+
+def test_ring_scale_regular_percent():
+    """Anneau du % Regular (410 de large, trou 198) → 270 de large, paroi 98,6 :
+    s·W + e = 270 et s·paroi + e = 98,6."""
+    from lib.symbols import ring_scale
+    s, e = ring_scale(410, 198, 270, 98.56)
+    assert abs(s * 410 + e - 270) < 0.01
+    assert abs(s * 106 + e - 98.56) < 0.01

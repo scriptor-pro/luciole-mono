@@ -15,6 +15,8 @@ import config  # noqa: E402
 from lib.classify import classify  # noqa: E402
 from lib import narrow, symbols  # noqa: E402
 from lib.outline import embolden  # noqa: E402
+from lib.geometry import measure  # noqa: E402
+from fontTools.ttLib import TTFont  # noqa: E402
 from lib.accents import derived_glyphs, split_accent  # noqa: E402
 
 
@@ -23,7 +25,8 @@ def ink_width(glyph):
     return xmax - xmin
 
 
-STEM = 112   # épaisseur du fût de n dans Luciole Regular (mesurée)
+GEOMETRY = measure(TTFont(config.SOURCE))
+STEM = GEOMETRY["stem"]   # épaisseur du fût, mesurée sur la source
 
 
 def fit_wide(glyph):
@@ -97,7 +100,7 @@ def _points(contours):
     return [[(round(p.x), round(p.y)) for p in c] for c in contours]
 
 
-def rebuild_accented(font, originals):
+def rebuild_accented(font, originals, centers):
     """Reconstruit chaque lettre accentuée sur sa base redessinée : contours de
     l'accent d'origine, décalés comme le fût de la base. Renvoie (reconstruits,
     non appariés)."""
@@ -111,7 +114,7 @@ def rebuild_accented(font, originals):
         if dx is None:
             unmatched.append(name)
             continue
-        shift = narrow.STEM_CENTER[base] - (narrow.OLD_STEM_CENTER + dx)
+        shift = centers[base] - (narrow.old_stem_center(GEOMETRY) + dx)
         layer = font[base].foreground.dup()
         for pts, contour in zip(points, contours):
             if any(pts is a for a in accent):
@@ -129,15 +132,15 @@ def rebuild_accented(font, originals):
 def main():
     font = fontforge.open(config.SOURCE)
     narrow.slashed_zero(font)
-    symbols.redesign_percents(font, config.CELL)
-    originals = {b: [c.dup() for c in font[b].foreground] for b in narrow.STEM_CENTER}
-    for redesign in (narrow.redesign_i, narrow.redesign_j,
-                     narrow.redesign_l, narrow.redesign_r):
-        redesign(font, STEM, config.CELL)
+    symbols.redesign_percents(font, STEM, config.CELL)
+    redesigns = {"dotlessi": narrow.redesign_i, "dotlessj": narrow.redesign_j,
+                 "l": narrow.redesign_l, "r": narrow.redesign_r}
+    originals = {b: [c.dup() for c in font[b].foreground] for b in redesigns}
+    centers = {b: f(font, GEOMETRY, config.CELL) for b, f in redesigns.items()}
     # locl tr/az/crh : i → idotaccent, qui doit suivre le nouveau i
     font["idotaccent"].foreground = font["i"].foreground.dup()
     font["idotaccent"].width = config.CELL
-    rebuilt, unmatched = rebuild_accented(font, originals)
+    rebuilt, unmatched = rebuild_accented(font, originals, centers)
     rebuilt.append("idotaccent")
     print(f"accents reconstruits : {len(rebuilt)} ; non appariés (centrés) : "
           f"{', '.join(unmatched) or 'aucun'}")
