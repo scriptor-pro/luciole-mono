@@ -12,3 +12,5 @@ PS_NAME = "LucioleMono-Regular"
 ZERO_WIDTH = ("NULL", ".null")
 NARROW_REDESIGN = ["i", "j", "l", "I", "one", "r", "f", "t", "dotlessi", "dotlessj"]
 STAGE1 = "build/stage1.ttf"
+CONDENSE_EXTEND = ["m"]          # glyphes à fûts verticaux purs
+EMBOLDEN = 0.6                   # part de l'amincissement compensée (1 = traits verticaux)
