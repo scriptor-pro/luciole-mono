@@ -16,14 +16,18 @@ def _counters(contours):
                    and a[3] <= b[3] for b in boxes)]
 
 
+def _ratios(ttfont, name):
+    return [(y1 - y0) / (x1 - x0) for x0, y0, x1, y1 in _counters(glyph_contours(ttfont, name))]
+
+
 @pytest.mark.parametrize("name,rings", [("percent", 2), ("perthousand", 3)])
-def test_percent_rings_stay_round(font, name, rings):
-    """Les anneaux de % et ‰ restent ronds : trous au plus 2,2 fois plus hauts
-    que larges (1,6 dans la source), au lieu d'ellipses écrasées."""
-    counters = _counters(glyph_contours(font, name))
-    assert len(counters) == rings
-    for x0, y0, x1, y1 in counters:
-        assert (y1 - y0) / (x1 - x0) <= 2.2, (x0, y0, x1, y1)
+def test_percent_rings_stay_round(font, source, name, rings):
+    """Les anneaux de % et ‰ restent ronds : trous au plus 1,35 fois plus
+    allongés que dans la source (1,62 en Regular → 2,2 ; 2,18 en gras),
+    au lieu d'ellipses écrasées (environ 5 avant redessin)."""
+    mono, src = _ratios(font, name), _ratios(source, name)
+    assert len(mono) == rings
+    assert max(mono) <= 1.35 * max(src), (mono, src)
 
 
 def test_ring_scale_regular_percent():

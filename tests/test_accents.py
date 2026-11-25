@@ -42,3 +42,11 @@ def test_accent_contours_kept(font, source, ch, base):
     mono = split_accent(glyph_contours(font, name), glyph_contours(font, base))[0]
     orig = split_accent(glyph_contours(source, name), glyph_contours(source, base))[0]
     assert len(mono) == len(orig) > 0
+
+
+def test_split_accent_tolerates_off_by_one():
+    """Luciole Bold : le fût de ï est à y −1..544 au lieu de 0..545."""
+    base = [[(80, 0), (280, 0), (280, 545), (80, 545)]]
+    acc = [[(80, -1), (280, -1), (280, 544), (80, 544)], [(100, 700), (200, 700), (150, 800)]]
+    accent, dx = split_accent(acc, base)
+    assert dx == 0 and accent == [acc[1]]

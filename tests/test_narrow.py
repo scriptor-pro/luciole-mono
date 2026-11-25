@@ -23,3 +23,11 @@ def test_confusables_differ(a, b):
 def test_zero_is_slashed(font, source):
     assert font["glyf"]["zero"].numberOfContours == \
         source["glyf"]["zero.slash"].numberOfContours
+
+
+def test_zero_narrower_than_O(font):
+    """Le 0 est nettement plus étroit que le O (comme les autres chiffres) :
+    la barre n'est plus le seul indice qui les distingue."""
+    glyf = font["glyf"]
+    width = lambda n: glyf[n].xMax - glyf[n].xMin
+    assert width("zero") <= 0.9 * width("O")

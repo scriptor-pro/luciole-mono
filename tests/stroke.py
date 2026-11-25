@@ -1,24 +1,8 @@
-"""Épaisseur réelle des traits, quel que soit leur angle (érosion)."""
-from fontTools.ttLib import TTFont
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+"""Contreformes fermées d'un glyphe rendu (Pillow)."""
+from PIL import Image, ImageDraw, ImageFont
 
-import config
-from lib.geometry import measure
 
 PX = 200          # taille de rendu : 1 unité ≈ 0,2 px
-STEM = measure(TTFont(config.SOURCE))["stem"]   # fût de la graisse testée
-
-
-def stroke_survival(font_path: str, char: str, ratio: float = 0.75) -> float:
-    """Part de l'encre qui survit à une érosion de largeur ratio × STEM.
-    Un trait plus fin que cette largeur disparaît entièrement."""
-    font = ImageFont.truetype(font_path, PX)
-    img = Image.new("L", (PX * 2, PX * 2), 255)
-    ImageDraw.Draw(img).text((PX // 2, PX * 3 // 2), char, font=font, fill=0, anchor="ls")
-    size = int(ratio * STEM * PX / 1000) | 1          # taille impaire
-    eroded = img.filter(ImageFilter.MaxFilter(size))
-    ink = sum(p < 128 for p in img.tobytes())
-    return sum(p < 128 for p in eroded.tobytes()) / ink
 
 
 def holes(font_path: str, char: str) -> int:

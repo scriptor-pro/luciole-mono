@@ -16,6 +16,7 @@ from lib.classify import classify  # noqa: E402
 from lib import narrow, symbols  # noqa: E402
 from lib.outline import embolden  # noqa: E402
 from lib.geometry import measure  # noqa: E402
+from lib.scanline import median_gap, median_stem  # noqa: E402
 from fontTools.ttLib import TTFont  # noqa: E402
 from lib.accents import derived_glyphs, split_accent  # noqa: E402
 
@@ -29,24 +30,42 @@ GEOMETRY = measure(TTFont(config.SOURCE))
 STEM = GEOMETRY["stem"]   # épaisseur du fût, mesurée sur la source
 
 
-def fit_wide(glyph):
+def _flagged(glyph):
+    return [[(p.x, p.y, p.on_curve) for p in c] for c in glyph.foreground]
+
+
+def fit_wide(glyph, room=None):
     """Ramène l'encre d'un glyphe large dans la cellule sans l'amincir.
 
     Les glyphes de config.CONDENSE_EXTEND (fûts verticaux purs, comme m)
-    sont condensés par condenseExtend, qui rétrécit les contreformes.
-    Les autres (diagonales, ronds) sont mis à l'échelle d'un facteur k puis
-    épaissis de STEM·(1 − k) pour retrouver leur graisse :
-    k·W + STEM·(1 − k) = place disponible."""
-    room = config.CELL - 2 * config.MARGIN
+    sont condensés par condenseExtend, qui rétrécit les contreformes, si
+    leurs fûts tiennent dans la place. Sinon on met à l'échelle d'un facteur k
+    puis on épaissit horizontalement de EMBOLDEN·trait·(1 − k), où trait est
+    l'épaisseur propre au glyphe (mesurée), sans jamais réduire l'espace
+    intérieur médian sous MIN_GAP (sinon le glyphe fait une tache) : si cette
+    limite joue, k est recalculé pour que k·W + k·gap − MIN_GAP = place."""
+    room = room or config.CELL - 2 * config.MARGIN
     width = ink_width(glyph)
     if width <= room:
         return
-    if glyph.glyphname in config.CONDENSE_EXTEND:
-        _condense_counters(glyph, room, width)
+    if glyph.glyphname in config.CONDENSE_EXTEND and _condense_counters(glyph, room, width):
+        pass
     else:
-        k = max((room - STEM) / (width - STEM), 0.2)
+        min_gap = config.MIN_GAP * STEM
+        gap = median_gap(_flagged(glyph), q=config.GAP_PERCENTILE)
+        own = config.EMBOLDEN * (median_stem(_flagged(glyph)) or STEM)
+        if own >= width / 2:                 # forme pleine (tiret, pavé)
+            k, delta = room / width, 0
+        else:
+            k = max((room - own) / (width - own), 0.2)
+            delta = own * (1 - k)
+        if gap is not None and delta > k * gap - min_gap:
+            k = min((room + min_gap) / (width + gap), room / width) \
+                if k * gap > min_gap else room / width
+            delta = max(k * gap - min_gap, 0)
         glyph.transform(psMat.scale(k, 1.0))
-        _embolden_keeping_counters(glyph, config.EMBOLDEN * STEM * (1 - k))
+        if delta >= 4:
+            _embolden_keeping_counters(glyph, delta)
         rest = ink_width(glyph)
         if rest > room:
             glyph.transform(psMat.scale(room / rest, 1.0))
@@ -67,7 +86,7 @@ def _embolden_keeping_counters(glyph, delta):
     target = _contour_count(glyph)
     saved = glyph.foreground.dup()
     while delta >= 4:
-        embolden(glyph, delta)
+        embolden(glyph, delta, horizontal=True)
         if _contour_count(glyph) >= target:
             return
         glyph.foreground = saved.dup()
@@ -76,13 +95,18 @@ def _embolden_keeping_counters(glyph, delta):
 
 def _condense_counters(glyph, room, width):
     """ink ≈ S + f·(W − S), S = somme des fûts : un essai donne S, le second
-    vise la largeur exacte."""
+    vise la largeur exacte. Renvoie False (glyphe intact) si les fûts seuls
+    ne laissent pas assez de place aux contreformes."""
     saved = glyph.foreground.dup()
     f0 = room / width
     glyph.condenseExtend(f0, 0)
     stems = (ink_width(glyph) - f0 * width) / (1 - f0)
-    glyph.foreground = saved
-    glyph.condenseExtend((room - stems) / (width - stems), 0)
+    glyph.foreground = saved.dup()
+    factor = (room - stems) / (width - stems)
+    if factor < config.MIN_CONDENSE:
+        return False
+    glyph.condenseExtend(factor, 0)
+    return True
 
 
 def center(glyph):
@@ -115,12 +139,13 @@ def rebuild_accented(font, originals, centers):
             unmatched.append(name)
             continue
         shift = centers[base] - (narrow.old_stem_center(GEOMETRY) + dx)
+        moved = [c.dup() for pts, c in zip(points, contours) if any(pts is a for a in accent)]
+        right = max(c.boundingBox()[2] for c in moved) + shift
+        shift -= max(0, right - (config.CELL - config.MARGIN))   # ex. caron de ľ
         layer = font[base].foreground.dup()
-        for pts, contour in zip(points, contours):
-            if any(pts is a for a in accent):
-                moved = contour.dup()
-                moved.transform(psMat.translate(shift, 0))
-                layer += moved
+        for contour in moved:
+            contour.transform(psMat.translate(shift, 0))
+            layer += contour
         glyph.foreground = layer
         glyph.correctDirection()
         glyph.round()
@@ -150,6 +175,16 @@ def main():
             continue
         if glyph.glyphname in config.ZERO_WIDTH:
             glyph.width = 0
+            continue
+        if glyph.glyphname == "zero" or glyph.glyphname.startswith("zero."):
+            fit_wide(glyph, room=round(config.ZERO_INK * (config.CELL - 2 * config.MARGIN)))
+            center(glyph)
+            continue
+        if glyph.glyphname == "I" and config.I_INK < 1:
+            room = round(config.I_INK * (config.CELL - 2 * config.MARGIN))
+            if not _condense_counters(glyph, room, ink_width(glyph)):
+                fit_wide(glyph, room=room)
+            center(glyph)
             continue
         kind = classify(glyph.width, config.CELL, config.NEAR_TOLERANCE)
         if kind == "wide" or ink_width(glyph) > config.CELL - 2 * config.MARGIN:

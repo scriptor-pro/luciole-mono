@@ -16,4 +16,15 @@ ZERO_WIDTH = ("NULL", ".null")
 NARROW_REDESIGN = ["i", "j", "l", "r", "dotlessi", "dotlessj"]
 STAGE1 = f"build/stage1-{STYLE}.ttf"
 CONDENSE_EXTEND = ["m"]          # glyphes à fûts verticaux purs
-EMBOLDEN = 0.6                   # part de l'amincissement compensée (1 = traits verticaux)
+EMBOLDEN = 1.0                   # part de l'amincissement horizontal compensée
+MIN_GAP = 0.2                    # espace intérieur minimal après épaississement (× fût)
+MIN_CONDENSE = 0.3               # en dessous, condenseExtend écrase les contreformes
+ZERO_INK = 0.86                  # largeur d'encre des zéros (× place), plus étroits que O
+I_INK = 1.0                      # largeur d'encre de I (× place)
+
+# Réglages propres à une graisse : en gras, I et 0 remplissent la cellule
+# comme 1 et O ; on les resserre pour garder les différences de silhouette.
+STYLE_OVERRIDES = {"Bold": {"ZERO_INK": 0.80, "I_INK": 0.65}}
+GAP_PERCENTILE = 0.75            # espace intérieur pris en compte (formes en coin : w, v)
+
+globals().update(STYLE_OVERRIDES.get(STYLE, {}))   # en dernier

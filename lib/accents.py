@@ -26,24 +26,34 @@ def _shift(contour, dx):
     return [(x + dx, y) for x, y in contour]
 
 
+TOLERANCE = 2      # écart toléré (unités) : la source n'est pas toujours exacte
+
+
+def _same(a, b):
+    return len(a) == len(b) and all(abs(p[0] - q[0]) <= TOLERANCE and
+                                    abs(p[1] - q[1]) <= TOLERANCE for p, q in zip(a, b))
+
+
 def split_accent(accented, base):
     """Renvoie (contours de l'accent, dx) où dx est le décalage horizontal de
     la base dans le glyphe accentué ; (accented, None) si la base n'y est pas.
 
-    Les dx candidats viennent des premiers points de chaque paire de contours
-    de même longueur ; un dx convient si tous les contours de la base, décalés,
-    se retrouvent dans le glyphe accentué."""
+    Les dx candidats viennent des premiers points des contours de même
+    longueur que le premier contour de la base ; un dx convient si tous les
+    contours de la base, décalés, se retrouvent (à TOLERANCE près) dans le
+    glyphe accentué."""
     if not base:
         return accented, None
     candidates = {c[0][0] - base[0][0][0] for c in accented
-                  if len(c) == len(base[0]) and c[0][1] == base[0][0][1]}
+                  if len(c) == len(base[0]) and abs(c[0][1] - base[0][0][1]) <= TOLERANCE}
     for dx in sorted(candidates, key=abs):
         remaining = list(accented)
         for contour in base:
             shifted = _shift(contour, dx)
-            if shifted not in remaining:
+            match = next((c for c in remaining if _same(c, shifted)), None)
+            if match is None:
                 break
-            remaining.remove(shifted)
+            remaining.remove(match)
         else:
             return remaining, dx
     return accented, None

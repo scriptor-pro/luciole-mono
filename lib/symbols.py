@@ -19,7 +19,8 @@ except ImportError:          # hors FontForge (tests)
 
 REDESIGNED = ("percent", "perthousand")
 RING_STROKE = 1.0         # épaisseur visée des anneaux, en fraction du fût
-BAR_EMBOLDEN = 14
+BAR_EMBOLDEN = 0.125     # épaississement de la barre oblique (× fût : 14 en Regular)
+COUNTER_PER_STEM = 0.35   # contreforme minimale réduite par unité de fût au-delà de 112
 
 # nom → dict(largeur finale d'un anneau, contreforme minimale,
 #   anneaux [(indices des contours, "top" ou "bottom", x gauche)],
@@ -64,7 +65,9 @@ def redesign_percents(font, stem, cell):
         glyph = font[name]
         orig = list(glyph.foreground)
         first_ring = lay["rings"][0][0]
-        target = min(RING_STROKE * stem, (lay["ring_width"] - lay["min_counter"]) / 2)
+        # plus la graisse est forte, plus on accepte une petite contreforme
+        counter = max(30, lay["min_counter"] - COUNTER_PER_STEM * (stem - 112))
+        target = min(RING_STROKE * stem, (lay["ring_width"] - counter) / 2)
         s, e = ring_scale(_width(_layer([orig[first_ring[0]]])),
                           _width(_layer([orig[first_ring[1]]])),
                           lay["ring_width"], target)
@@ -83,7 +86,7 @@ def redesign_percents(font, stem, cell):
         x0, _, x1, _ = bar.boundingBox()
         bar.transform(psMat.translate(lay["bar_center"] - (x0 + x1) / 2, 0))
         glyph.foreground = bar                 # la barre seule est épaissie
-        embolden(glyph, BAR_EMBOLDEN)
+        embolden(glyph, BAR_EMBOLDEN * stem)
         bar = glyph.foreground.dup()
         glyph.foreground = parts
         if e > 2:
