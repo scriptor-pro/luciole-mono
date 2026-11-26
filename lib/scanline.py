@@ -90,3 +90,70 @@ def gap_rows(contours, min_width, sx=1.0):
     return sum(1 for xs in _scan(contours)
                for j in range(1, len(xs) - 1, 2)
                if (xs[j + 1] - xs[j]) * sx >= min_width)
+
+
+def _seg_dist(p, a, b):
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    t = 0 if dx == dy == 0 else max(0, min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy)
+                                              / (dx * dx + dy * dy)))
+    return ((p[0] - a[0] - t * dx) ** 2 + (p[1] - a[1] - t * dy) ** 2) ** 0.5
+
+
+def _cross(a, b, c, d):
+    def side(p, q, r):
+        return (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+    return side(a, b, c) * side(a, b, d) < 0 and side(c, d, a) * side(c, d, b) < 0
+
+
+def _inside(p, polys):
+    inside = False
+    for poly in polys:
+        for a, b in zip(poly, poly[1:] + poly[:1]):
+            if (a[1] > p[1]) != (b[1] > p[1]) and \
+                    p[0] < a[0] + (p[1] - a[1]) * (b[0] - a[0]) / (b[1] - a[1]):
+                inside = not inside
+    return inside
+
+
+def min_distance(contours_a, contours_b):
+    """Plus petite distance entre l'encre de deux groupes de contours
+    (0 s'ils se touchent ou se chevauchent)."""
+    pa = [_flatten(c) for c in contours_a]
+    pb = [_flatten(c) for c in contours_b]
+    edges = lambda polys: [(a, b) for poly in polys for a, b in zip(poly, poly[1:] + poly[:1])]
+    ea, eb = edges(pa), edges(pb)
+    if any(_cross(a, b, c, d) for a, b in ea for c, d in eb) \
+            or _inside(pa[0][0], pb) or _inside(pb[0][0], pa):
+        return 0
+    return round(min(min(_seg_dist(p, c, d) for poly in pa for p in poly for c, d in eb),
+                     min(_seg_dist(p, a, b) for poly in pb for p in poly for a, b in ea)))
+
+
+def _bbox(contour):
+    xs = [p[0] for p in contour]
+    ys = [p[1] for p in contour]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def ink_groups(contours):
+    """Indices des contours regroupés par morceau d'encre : deux contours qui
+    se touchent, ou dont l'un contient l'autre (un trou et sa forme), vont
+    ensemble. Les boîtes ne servent que de filtre : celles des chevrons de «
+    se recouvrent sans que leur encre se touche."""
+    boxes = [_bbox(c) for c in contours]
+    parent = list(range(len(contours)))
+
+    def root(i):
+        while parent[i] != i:
+            i = parent[i]
+        return i
+    for i, a in enumerate(boxes):
+        for j in range(i + 1, len(boxes)):
+            b = boxes[j]
+            if a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3] \
+                    and min_distance([contours[i]], [contours[j]]) == 0:
+                parent[root(i)] = root(j)
+    out = {}
+    for i in range(len(contours)):
+        out.setdefault(root(i), []).append(i)
+    return list(out.values())

@@ -15,6 +15,9 @@ CMAP = TTFont(config.SOURCE).getBestCmap()
 # Un espace blanc se voit de la même façon quelle que soit la graisse des
 # traits qui l'entourent : seuil absolu (0,15 × fût du Regular).
 MIN_VISIBLE_GAP = 17
+# Morceaux très proches (chiffres et barre de fraction, N et º) : l'écart
+# minimal entre morceaux (config.SEPARATION) limite leur épaississement.
+SEPARATED = set("½¼¾№")
 REGULAR = os.path.join(os.path.dirname(DIST), "LucioleMono-Regular.ttf")
 
 
@@ -46,7 +49,8 @@ def test_wide_glyph_stems_keep_weight(font, source, ch):
     """Un glyphe compressé garde l'épaisseur horizontale de ses traits
     (médiane par balayage) : entre 70 % et 130 % de la source."""
     ratio = median_stem(_flagged(font, ch)) / median_stem(_flagged(source, ch))
-    assert 0.7 <= ratio <= 1.3, ratio
+    low = 0.6 if ch in SEPARATED else 0.7
+    assert low <= ratio <= 1.3, ratio
 
 
 def _ink(path, ch):

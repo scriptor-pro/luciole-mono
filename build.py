@@ -16,7 +16,7 @@ from lib.classify import classify  # noqa: E402
 from lib import narrow, symbols  # noqa: E402
 from lib.outline import embolden  # noqa: E402
 from lib.geometry import measure  # noqa: E402
-from lib.scanline import gap_rows, median_gap, median_stem  # noqa: E402
+from lib.scanline import gap_rows, ink_groups, median_gap, median_stem, min_distance  # noqa: E402
 from fontTools.ttLib import TTFont  # noqa: E402
 from lib.accents import derived_glyphs, split_accent  # noqa: E402
 
@@ -64,8 +64,13 @@ def fit_wide(glyph, room=None):
                 if k * gap > min_gap else room / width
             delta = max(k * gap - min_gap, 0)
         glyph.transform(psMat.scale(k, 1.0))
+        marks = _take_marks(glyph)          # accents : réduits, pas épaissis
         if delta >= 4:
             _embolden_keeping_counters(glyph, delta)
+        layer = glyph.foreground
+        for contour in marks:
+            layer += contour
+        glyph.foreground = layer
         rest = ink_width(glyph)
         if rest > room:
             glyph.transform(psMat.scale(room / rest, 1.0))
@@ -80,22 +85,69 @@ def _contour_count(glyph):
     return len(probe)
 
 
+def _take_marks(glyph):
+    """Retire et renvoie les accents : morceaux d'encre entièrement au-dessus
+    ou au-dessous du plus grand (trémas de Ä Ö Ẅ, accents de Ő Ű). Épaissis
+    avec la lettre, les points d'un tréma se soudaient en barre."""
+    contours = list(glyph.foreground)
+    flagged = _flagged(glyph)
+    groups = ink_groups(flagged)
+    if len(groups) < 2:
+        return []
+
+    def box(group):
+        pts = [p for i in group for p in flagged[i]]
+        return (min(p[0] for p in pts), min(p[1] for p in pts),
+                max(p[0] for p in pts), max(p[1] for p in pts))
+    body = box(max(groups, key=lambda g: (lambda b: (b[2] - b[0]) * (b[3] - b[1]))(box(g))))
+    marks = {i for g in groups for i in g
+             if box(g)[1] >= body[3] or box(g)[3] <= body[1]}
+    if not marks:
+        return []
+    keep = fontforge.layer()
+    keep.is_quadratic = glyph.foreground.is_quadratic
+    for i, c in enumerate(contours):
+        if i not in marks:
+            keep += c
+    glyph.foreground = keep
+    return [contours[i].dup() for i in sorted(marks)]
+
+
+def _separation(glyph):
+    """Plus petit blanc entre deux morceaux d'encre (None s'il n'y en a qu'un) :
+    points de …, chevrons de «, apostrophe de ŉ, caron de ď."""
+    flagged = _flagged(glyph)
+    groups = ink_groups(flagged)
+    if len(groups) < 2:
+        return None, 1
+    parts = [[flagged[i] for i in g] for g in groups]
+    return min(min_distance(a, b) for n, a in enumerate(parts)
+               for b in parts[n + 1:]), len(groups)
+
+
 def _visible_gaps(glyph):
     return gap_rows(_flagged(glyph), config.VISIBLE_GAP)
 
 
 def _embolden_keeping_counters(glyph, delta):
-    """Épaissit de delta ; si une contreforme se bouche (moins de contours)
-    ou si des encoches ouvertes disparaissent (moins de KEEP_GAPS des espaces
-    visibles, comme le bas du M), réessaie avec 75 % de l'épaisseur, jusqu'à
-    renoncer."""
+    """Épaissit de delta ; réessaie avec 75 % de l'épaisseur, jusqu'à
+    renoncer, si :
+    - une contreforme se bouche (moins de contours) ;
+    - des encoches ouvertes disparaissent (moins de KEEP_GAPS des espaces
+      visibles, comme le bas du M) ;
+    - deux morceaux d'encre séparés se rapprochent à moins de SEPARATION
+      (points de …, chevrons de «)."""
     target = _contour_count(glyph)
     gaps = _visible_gaps(glyph)
+    sep, parts = _separation(glyph)
     saved = glyph.foreground.dup()
     while delta >= 4:
         embolden(glyph, delta, horizontal=True)
+        new_sep, new_parts = _separation(glyph)
         if (_contour_count(glyph) >= target
-                and _visible_gaps(glyph) >= config.KEEP_GAPS * gaps):
+                and _visible_gaps(glyph) >= config.KEEP_GAPS * gaps
+                and (sep is None or (new_parts >= parts
+                                     and new_sep >= min(config.SEPARATION, sep)))):
             return
         glyph.foreground = saved.dup()
         delta *= 0.75
@@ -132,6 +184,42 @@ def _points(contours):
     return [[(round(p.x), round(p.y)) for p in c] for c in contours]
 
 
+ACCENT_MIN_SCALE = 0.6      # réduction maximale d'un accent latéral (ľ, ŀ)
+
+
+def _fit_side_accent(base, accent):
+    """Accent qui dépasse à droite de la cellule. Au-dessus de la lettre
+    (ĵ), on le pousse simplement vers la gauche. À côté (caron de ľ, point de
+    ŀ en gras) : on glisse tout le glyphe vers la gauche (jusqu'à MARGIN/2), ce qui
+    garde l'écart entre fût et accent ; s'il dépasse encore, on réduit
+    l'accent autour de son bord gauche. Pousser l'accent seul le soudait au
+    fût."""
+    limit = config.CELL - config.MARGIN
+    a0 = min(c.boundingBox()[0] for c in accent)
+    a1 = max(c.boundingBox()[2] for c in accent)
+    if a1 <= limit:
+        return
+    if min(c.boundingBox()[1] for c in accent) >= base.boundingBox()[3]:
+        shift = psMat.translate(limit - a1, 0)     # accent au-dessus (ĵ) : sans risque
+        for c in accent:
+            c.transform(shift)
+        return
+    slide = min(a1 - limit, max(0, base.boundingBox()[0] - config.MARGIN / 2))
+    move = psMat.translate(-slide, 0)
+    base.transform(move)
+    for c in accent:
+        c.transform(move)
+    a0, a1 = a0 - slide, a1 - slide
+    if a1 > limit:
+        f = max(ACCENT_MIN_SCALE, (limit - a0) / (a1 - a0))
+        ys = [c.boundingBox()[1] for c in accent] + [c.boundingBox()[3] for c in accent]
+        cy = (min(ys) + max(ys)) / 2
+        m = psMat.compose(psMat.translate(-a0, -cy),
+                          psMat.compose(psMat.scale(f), psMat.translate(a0, cy)))
+        for c in accent:
+            c.transform(m)
+
+
 def rebuild_accented(font, originals, centers):
     """Reconstruit chaque lettre accentuée sur sa base redessinée : contours de
     l'accent d'origine, décalés comme le fût de la base. Renvoie (reconstruits,
@@ -148,11 +236,11 @@ def rebuild_accented(font, originals, centers):
             continue
         shift = centers[base] - (narrow.old_stem_center(GEOMETRY) + dx)
         moved = [c.dup() for pts, c in zip(points, contours) if any(pts is a for a in accent)]
-        right = max(c.boundingBox()[2] for c in moved) + shift
-        shift -= max(0, right - (config.CELL - config.MARGIN))   # ex. caron de ľ
-        layer = font[base].foreground.dup()
         for contour in moved:
             contour.transform(psMat.translate(shift, 0))
+        layer = font[base].foreground.dup()
+        _fit_side_accent(layer, moved)
+        for contour in moved:
             layer += contour
         glyph.foreground = layer
         glyph.correctDirection()

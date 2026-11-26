@@ -54,3 +54,28 @@ def test_gap_rows_counts_every_gap_wide_enough():
     assert gap_rows(two_gaps, 10) == 39          # seul l'espace de 20 compte
     assert gap_rows(two_gaps, 4) == 2 * 39
     assert gap_rows(two_gaps, 10, sx=0.4) == 0   # 20 × 0,4 = 8 < 10
+
+
+def test_min_distance_between_shapes():
+    from lib.scanline import min_distance
+    a = [_rect(0, 0, 100, 100)]
+    assert min_distance(a, [_rect(130, 0, 200, 100)]) == 30          # côte à côte
+    assert min_distance(a, [_rect(130, 140, 200, 200)]) == 50        # en diagonale
+    assert min_distance(a, [_rect(50, 50, 150, 150)]) == 0           # chevauchement
+
+
+def test_ink_groups_keeps_holes_with_their_shape():
+    from lib.scanline import ink_groups
+    o_outer, o_inner = _rect(0, 0, 100, 100), _rect(30, 30, 70, 70)
+    dot1, dot2 = _rect(10, 150, 30, 170), _rect(60, 150, 80, 170)
+    groups = ink_groups([dot1, o_outer, dot2, o_inner])
+    assert sorted(sorted(g) for g in groups) == [[0], [1, 3], [2]]
+
+
+def test_ink_groups_separates_nested_chevrons():
+    """Les boîtes des deux chevrons de « se recouvrent, pas leur encre."""
+    from lib.scanline import ink_groups
+    def chevron(x):
+        return [(x, 50, True), (x + 40, 100, True), (x + 60, 100, True),
+                (x + 20, 50, True), (x + 60, 0, True), (x + 40, 0, True)]
+    assert len(ink_groups([chevron(0), chevron(30)])) == 2

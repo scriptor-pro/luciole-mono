@@ -32,3 +32,28 @@ def holes(font_path: str, char: str) -> int:
             if not border and size > 4:
                 count += 1
     return count
+
+
+PARTS_PX = 60     # 1 px ≈ 17 unités ≈ VISIBLE_GAP : deux morceaux plus proches se soudent
+
+
+def ink_parts(font_path: str, char: str, px: int = PARTS_PX) -> int:
+    """Nombre de morceaux d'encre séparés (connexité 4) du glyphe rendu."""
+    font = ImageFont.truetype(font_path, px)
+    img = Image.new("L", (px * 3, px * 3), 255)
+    ImageDraw.Draw(img).text((px, px * 2), char, font=font, fill=0, anchor="ls")
+    w, h = img.size
+    data = img.tobytes()
+    dark = {i for i, v in enumerate(data) if v < 128}
+    count = 0
+    while dark:
+        count += 1
+        stack = [dark.pop()]
+        while stack:
+            i = stack.pop()
+            x = i % w
+            for j in (i - w, i + w, i - 1 if x else -1, i + 1 if x < w - 1 else -1):
+                if j in dark:
+                    dark.remove(j)
+                    stack.append(j)
+    return count

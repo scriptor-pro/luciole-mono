@@ -1,5 +1,7 @@
 import pytest
 
+import config
+
 from lib.accents import derived_glyphs, glyph_contours, split_accent
 
 
@@ -29,8 +31,13 @@ def test_derived_glyphs_maps_to_dotless_bases():
                                      ("ĵ", "dotlessj"), ("ĺ", "l"), ("ľ", "l"),
                                      ("ŕ", "r"), ("ř", "r")])
 def test_accented_follow_redesigned_base(font, ch, base):
+    """La lettre accentuée reprend la base redessinée ; elle peut glisser à
+    gauche pour laisser la place à un accent latéral (ľ en gras), sans
+    approcher le bord de la cellule à moins de MARGIN/2."""
     g = glyph_contours(font, font.getBestCmap()[ord(ch)])
-    assert split_accent(g, glyph_contours(font, base))[1] == 0
+    dx = split_accent(g, glyph_contours(font, base))[1]
+    assert dx is not None and dx <= 0
+    assert min(x for c in g for x, _ in c) >= config.MARGIN / 2
 
 
 @pytest.mark.parametrize("ch,base", [("í", "dotlessi"), ("ï", "dotlessi"),
