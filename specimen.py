@@ -1,4 +1,7 @@
-"""Planches de contrôle visuel : make specimen → specimens/*.png"""
+"""Planches de contrôle visuel : make specimen → specimens/*.png
+
+Rendu par Pango (lib/pango_render.py), comme dans les applications du
+bureau : les gris et les pixels sont ceux que l'utilisateur verra."""
 import subprocess
 import sys
 from pathlib import Path
@@ -9,7 +12,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path[:0] = [str(ROOT), str(ROOT / "tests")]
 
 import config  # noqa: E402
-from render import render  # noqa: E402
+from lib.pango_render import render_pango as render  # noqa: E402
 
 DIST = str(ROOT / "dist" / f"{config.PS_NAME}.ttf")
 
@@ -17,6 +20,9 @@ ALPHABET = ("abcdefghijklmnopqrstuvwxyz\nABCDEFGHIJKLMNOPQRSTUVWXYZ\n"
             "0123456789 %&@#$€‰ ½™ ⇒ ←→\n"
             "íìîïĩīĭįĵĺļľŀłŕŗřţťŧÍÌÎÏ")
 CONFUSABLES = "Il1| O0o '`ʼ\" ;:.,"
+# glyphes où des morceaux se soudaient en gras (relecture du 2026-11-26)
+ACCENTS = "AÄOÖUÜŐŰWẄ ÃĄ nñ dď lľŀ … «» %‰"
+ZOOM = 3          # petites tailles agrandies pixel par pixel
 CODE = '''def moyenne(valeurs: list[float]) -> float:
     if not valeurs:  # liste vide → 0
         return 0.0
@@ -67,6 +73,10 @@ def main(out_dir: Path = ROOT / "specimens"):
           labels=["Luciole (source)", "Luciole Mono"]).save(out_dir / "alphabet.png")
     stack([render(DIST, CONFUSABLES, px) for px in (12, 18, 48)]
           ).save(out_dir / "confusables.png")
+    small = [render(DIST, ACCENTS, px) for px in (14, 16)]
+    stack([im.resize((im.width * ZOOM, im.height * ZOOM), Image.NEAREST) for im in small]
+          + [render(DIST, ACCENTS, 48)],
+          labels=["14 px x3", "16 px x3", "48 px"]).save(out_dir / "accents.png")
     stack([column_grid(render(DIST, CODE, px), DIST, px).convert("L")
            for px in (12, 14, 18)]).save(out_dir / "code.png")
     stack([render(DIST, CODE, 16), render(atkinson_mono(), CODE, 16)],
