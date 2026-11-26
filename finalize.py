@@ -84,6 +84,21 @@ def map_no_break_spaces(font):
                 table.cmap.setdefault(code, "space")
 
 
+def map_beta(font):
+    """Luciole Bold range son glyphe beta sous U+A7B5 seulement : β passait
+    à une police de secours."""
+    if "beta" not in font.getGlyphOrder():
+        return
+    for table in font["cmap"].tables:
+        if table.isUnicode():
+            table.cmap.setdefault(0x03B2, "beta")
+
+
+def set_weight_class(font):
+    """La source Bold déclare 600 (demi-gras pour fontconfig)."""
+    font["OS/2"].usWeightClass = 700 if "Bold" in config.STYLE else 400
+
+
 def set_mono_metadata(font):
     font["post"].isFixedPitch = 1
     font["OS/2"].panose.bProportion = 9
@@ -98,6 +113,8 @@ def main():
     strip_hinting(font)
     fix_added_empty_glyphs(font)
     map_no_break_spaces(font)
+    map_beta(font)
+    set_weight_class(font)
     set_mono_metadata(font)
     os.makedirs(os.path.join(HERE, "dist"), exist_ok=True)
     font.save(os.path.join(HERE, "dist", f"{config.PS_NAME}.ttf"))

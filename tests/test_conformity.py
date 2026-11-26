@@ -14,7 +14,7 @@ def test_every_glyph_is_cell_width(font):
 
 def test_same_codepoints_as_source(font, source):
     """Mêmes caractères que la source, plus les espaces insécables ajoutées."""
-    assert set(font.getBestCmap()) - set(source.getBestCmap()) <= {0x00A0, 0x202F}
+    assert set(font.getBestCmap()) - set(source.getBestCmap()) <= {0x00A0, 0x202F, 0x03B2}
     assert set(source.getBestCmap()) <= set(font.getBestCmap())
 
 
@@ -56,3 +56,13 @@ def test_fontconfig_sees_mono():
     out = subprocess.run(["fc-query", "-f", "%{spacing}\n", DIST],
                          capture_output=True, text=True).stdout
     assert out.split()[0] == "100"
+
+
+def test_beta_mapped(font):
+    """Luciole Bold range son glyphe beta sous U+A7B5 seulement."""
+    if "beta" in font.getGlyphOrder():
+        assert font.getBestCmap().get(0x03B2) == "beta"
+
+
+def test_weight_class_matches_style(font):
+    assert font["OS/2"].usWeightClass == (700 if "Bold" in config.STYLE else 400)

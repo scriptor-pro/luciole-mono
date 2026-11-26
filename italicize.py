@@ -34,7 +34,8 @@ def set_italic_metadata(font, angle):
     hhea = font["hhea"]
     hhea.caretSlopeRise = 1000
     hhea.caretSlopeRun = round(1000 * math.tan(math.radians(angle)))
-    hhea.caretOffset = 0
+    # l'inclinaison pivote autour de SLANT_Y0 : décalage à la ligne de base
+    hhea.caretOffset = round(-config.SLANT_Y0 * math.tan(math.radians(angle)))
     os2 = font["OS/2"]
     os2.fsSelection = (os2.fsSelection | ITALIC) & ~REGULAR
     font["head"].macStyle |= 2
@@ -50,8 +51,11 @@ def set_italic_names(font, ps_name, style):
         name.setName(value, name_id, 1, 0, 0)
 
 
-def main():
+def main(uprights):
+    """Penche les droits demandés (Regular → Italic, Bold → BoldItalic)."""
     for ps_style, (upright, style) in config.ITALICS.items():
+        if upright not in uprights:
+            continue
         font = TTFont(os.path.join(HERE, "dist", f"LucioleMono-{upright}.ttf"))
         slant_glyphs(font, config.SLANT, config.SLANT_Y0)
         set_italic_metadata(font, config.SLANT)
@@ -60,4 +64,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:] or [u for u, _ in config.ITALICS.values()])

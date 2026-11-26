@@ -18,6 +18,8 @@ Luciole Mono (Regular, Bold, Italic et Bold Italic) est une **œuvre dérivée**
 - le zéro barré de Luciole (`zero.slash`) devient le `0` par défaut, plus étroit que `O` ;
 - en gras, `I` est resserré pour se distinguer du `1` ;
 - Italic et Bold Italic sont les versions droites penchées de 15°, comme Luciole Italic (une oblique du droit) : elles gardent tous les redessins ci-dessus ;
+- en épaississant, les accents ne sont pas épaissis et les morceaux d'un glyphe restent séparés (trémas, points de `…`, chevrons de `«`) ;
+- `β` est ajouté au cmap du gras (Luciole Bold ne le range que sous U+A7B5), et la graisse du gras est déclarée 700 ;
 - le crénage (`kern`), les ligatures (`liga`) et le hinting TrueType ont été retirés, et les métadonnées sont celles d'une police monospace.
 
 ## Construire
@@ -32,12 +34,14 @@ make specimen    # planches de contrôle dans specimens/
 make install     # copie dans ~/.local/share/fonts/LucioleMono/ et fc-cache
 ```
 
-Les réglages (largeur de cellule, marge, épaississement, réglages propres au gras) se trouvent dans `config.py`. Les dimensions (fût, barre du `t`, hauteurs) sont mesurées sur chaque police source (`lib/geometry.py`). Les formes redessinées sont dans `lib/narrow.py` et `lib/symbols.py`. L'inclinaison (`SLANT`, `SLANT_Y0`) est dans `config.py`, appliquée par `italicize.py`. Pour construire une seule graisse : `make all STYLES=Bold` (les italiques sont refaits à partir des droits présents dans `dist/`).
+Les réglages (largeur de cellule, marge, épaississement, réglages propres au gras) se trouvent dans `config.py`. Les dimensions (fût, barre du `t`, hauteurs) sont mesurées sur chaque police source (`lib/geometry.py`). Les formes redessinées sont dans `lib/narrow.py` et `lib/symbols.py`. L'inclinaison (`SLANT`, `SLANT_Y0`) est dans `config.py`, appliquée par `italicize.py`. Pour construire une seule graisse : `make all STYLES=Bold` (seule son italique est refaite).
 
 ## Limites connues
 
 - En gras, la cellule (620) est étroite pour Luciole Bold (son `n` fait 686) : `m`, `M`, `W` et les symboles larges ont des traits plus fins que les autres lettres grasses : l'épaississement s'arrête avant de boucher leurs encoches (bas du `M`).
 - `⇔` est peu lisible dans les deux graisses.
+- En gras, quelques glyphes rares gardent des parties soudées : fractions (`½ ¼ ¾`…), ligatures typographiques (`ﬁ ﬂ ﬀ`…) et `℗`. Les fractions et `№` sont un peu plus maigres que leurs voisins, pour rester lisibles.
+- Le gras est très noir : le creux du `0` est étroit, et les diagonales épaissies montrent de petites marches en grande taille.
 - Les italiques débordent un peu de la cellule en haut à droite et en bas à gauche, comme toute italique monospace.
 - `ł`, `į`, `ⁱ` et `ℓ` gardent le dessin d'origine, centré : leur accent est soudé à la lettre dans Luciole.
 

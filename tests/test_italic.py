@@ -11,7 +11,6 @@ ANGLE = 15
 Y0 = 385          # Luciole : le n droit commence à 90, l'italique à −13
 ITALICS = [("Italic", "Regular", "Italic"),
            ("BoldItalic", "Bold", "Bold Italic")]
-CHECKED = ["n", "percent", "i", "l", "zero", "m", "O"]
 
 
 @pytest.fixture(scope="module", params=ITALICS, ids=[i[0] for i in ITALICS])
@@ -27,13 +26,14 @@ def _points(font, name):
     return list(coords), list(ends), [f & 1 for f in flags]
 
 
-@pytest.mark.parametrize("name", CHECKED)
-def test_points_are_slanted_upright(pair, name):
+def test_points_are_slanted_upright(pair):
+    """Tous les glyphes : chaque point est le point droit incliné."""
     ital, up, *_ = pair
     t = math.tan(math.radians(ANGLE))
-    coords, ends, flags = _points(up, name)
-    expected = [(round(x + (y - Y0) * t), y) for x, y in coords]
-    assert _points(ital, name) == (expected, ends, flags)
+    for name in up.getGlyphOrder():
+        coords, ends, flags = _points(up, name)
+        expected = [(round(x + (y - Y0) * t), y) for x, y in coords]
+        assert _points(ital, name) == (expected, ends, flags), name
 
 
 def test_same_advances_and_cmap(pair):
@@ -64,6 +64,10 @@ def test_italic_flags(pair):
     hhea = ital["hhea"]
     run = hhea.caretSlopeRun / hhea.caretSlopeRise
     assert abs(run - math.tan(math.radians(ANGLE))) < 0.01
+    # l'inclinaison pivote autour de Y0 : à la ligne de base, le curseur est
+    # décalé de −Y0·tan
+    assert hhea.caretOffset == round(-Y0 * math.tan(math.radians(ANGLE)))
+    assert ital["OS/2"].usWeightClass == up["OS/2"].usWeightClass
 
 
 def test_names(pair):
