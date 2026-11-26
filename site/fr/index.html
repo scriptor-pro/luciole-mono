@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luciole Mono — Luciole à chasse fixe, pour le terminal et le code</title>
+<meta name="description" content="Luciole Mono : version à chasse fixe de Luciole, la police conçue pour les personnes malvoyantes. Pour le terminal et l'éditeur de code. Libre, CC-BY 4.0.">
+<link rel="alternate" hreflang="en" href="../">
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 10 16%22%3E%3Crect width=%226%22 height=%2216%22 fill=%22%23ffc93c%22/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="wrap">
+
+<nav class="top" aria-label="Langue"><a href="../" hreflang="en" lang="en">English</a></nav>
+
+<header>
+  <h1>Luciole Mono<span class="caret" aria-hidden="true"></span></h1>
+  <p class="lede">Luciole, la police conçue pour les personnes malvoyantes, avec tous ses caractères de la même largeur — pour votre terminal et votre code.</p>
+</header>
+
+<main>
+  <section class="terminal" aria-label="Essayer Luciole Mono">
+    <div class="controls">
+      <label for="size">Taille <input id="size" type="range" min="11" max="32" value="15"></label>
+      <output id="size-out" for="size"></output>
+      <div class="styles" role="group" aria-label="Style">
+        <button type="button" aria-pressed="true" data-weight="400" data-style="normal">Regular</button>
+        <button type="button" aria-pressed="false" data-weight="700" data-style="normal">Gras</button>
+        <button type="button" aria-pressed="false" data-weight="400" data-style="italic">Italique</button>
+        <button type="button" aria-pressed="false" data-weight="700" data-style="italic">Gras italique</button>
+      </div>
+    </div>
+    <textarea class="screen" spellcheck="false" aria-label="Texte d'exemple, modifiable">def moyenne(valeurs: list[float]) -> float:
+    if not valeurs:  # liste vide → 0
+        return 0.0
+    return sum(valeurs) / len(valeurs)  # {i}[l]1|0O
+
+Il1| O0o '`"&nbsp;;:., «&nbsp;Ça marche&nbsp;!&nbsp;» Où êtes-vous&nbsp;?</textarea>
+    <p class="hint">Tapez votre propre texte. 11 pt (15 px) est une taille particulièrement nette.</p>
+  </section>
+
+  <h2>Des caractères qu'on ne confond pas</h2>
+  <ul class="pairs" aria-label="Caractères qui se ressemblent dans beaucoup de polices">
+    <li>I l 1 |</li>
+    <li>0 O o</li>
+    <li>' ` "</li>
+    <li>; : , .</li>
+  </ul>
+  <p class="pairs-note">Le zéro est barré et plus étroit que le O&nbsp;; <code>i</code>, <code>j</code>, <code>l</code> et <code>r</code> sont redessinés avec des empattements pour occuper leur case.</p>
+
+  <h2>Télécharger</h2>
+  <ul class="files">
+    <li><a href="../fonts/LucioleMono-Regular.ttf" download>LucioleMono-Regular.ttf <span class="size">137 Ko</span></a></li>
+    <li><a class="b" href="../fonts/LucioleMono-Bold.ttf" download>LucioleMono-Bold.ttf <span class="size">141 Ko</span></a></li>
+    <li><a class="i" href="../fonts/LucioleMono-Italic.ttf" download>LucioleMono-Italic.ttf <span class="size">142 Ko</span></a></li>
+    <li><a class="b i" href="../fonts/LucioleMono-BoldItalic.ttf" download>LucioleMono-BoldItalic.ttf <span class="size">146 Ko</span></a></li>
+  </ul>
+
+  <h2>Installer</h2>
+  <ol class="steps">
+    <li>Téléchargez les quatre fichiers ci-dessus.</li>
+    <li>Sous Linux, copiez-les dans <code>~/.local/share/fonts/</code> puis lancez <code>fc-cache -f</code>. Sous macOS ou Windows, ouvrez chaque fichier et choisissez «&nbsp;Installer&nbsp;».</li>
+    <li>Choisissez «&nbsp;Luciole Mono&nbsp;» dans les réglages du terminal ou de l'éditeur, puis redémarrez-le.</li>
+  </ol>
+
+  <h2>À propos</h2>
+  <p>Luciole a été conçue pour les personnes malvoyantes par Laurent Bourcellier et Jonathan Perez, au Centre Technique Régional pour la Déficience Visuelle (<a href="https://typographies.fr">typographies.fr</a>). Luciole Mono reprend son dessin sur une grille de 620 unités : les lettres larges sont comprimées puis réépaissies, les lettres étroites redessinées, et le gras est un demi-gras plus léger pour que les creux des lettres restent ouverts.</p>
+  <p>Luciole Mono est une <strong>version dérivée de Luciole</strong>. C'est un projet indépendant, ni réalisé ni approuvé par les auteurs de Luciole. Les limites connues et la liste complète des modifications sont dans le <a href="https://github.com/scriptor-pro/luciole-mono/blob/main/README.fr.md">README</a>.</p>
+</main>
+
+<footer>
+  <p>Luciole © Laurent Bourcellier &amp; Jonathan Perez – 2019. Luciole Mono et ses scripts de construction sont distribués sous la même licence, <a href="https://creativecommons.org/licenses/by/4.0/deed.fr">Creative Commons Attribution 4.0</a>.</p>
+  <p>Code source&nbsp;: <a href="https://github.com/scriptor-pro/luciole-mono">github.com/scriptor-pro/luciole-mono</a></p>
+</footer>
+
+</div>
+<script src="../demo.js"></script>
+</body>
+</html>

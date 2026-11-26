@@ -1,6 +1,6 @@
 # Luciole Mono
 
-*[Français](README.fr.md)*
+*[Français](README.fr.md)* · Website: https://scriptor-pro.github.io/luciole-mono/
 
 A monospaced version of the **Luciole** typeface, for terminals and code editors.
 

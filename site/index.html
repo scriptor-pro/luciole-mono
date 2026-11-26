@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luciole Mono — a monospaced Luciole for terminals and code</title>
+<meta name="description" content="Luciole Mono: a monospaced version of Luciole, the typeface designed for visually impaired readers. For terminals and code editors. Free, CC-BY 4.0.">
+<link rel="alternate" hreflang="fr" href="fr/">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 10 16%22%3E%3Crect width=%226%22 height=%2216%22 fill=%22%23ffc93c%22/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="wrap">
+
+<nav class="top" aria-label="Language"><a href="fr/" hreflang="fr" lang="fr">Français</a></nav>
+
+<header>
+  <h1>Luciole Mono<span class="caret" aria-hidden="true"></span></h1>
+  <p class="lede">Luciole, the typeface designed for visually impaired readers, now with every character the same width — for your terminal and your code.</p>
+</header>
+
+<main>
+  <section class="terminal" aria-label="Try Luciole Mono">
+    <div class="controls">
+      <label for="size">Size <input id="size" type="range" min="11" max="32" value="15"></label>
+      <output id="size-out" for="size"></output>
+      <div class="styles" role="group" aria-label="Style">
+        <button type="button" aria-pressed="true" data-weight="400" data-style="normal">Regular</button>
+        <button type="button" aria-pressed="false" data-weight="700" data-style="normal">Bold</button>
+        <button type="button" aria-pressed="false" data-weight="400" data-style="italic">Italic</button>
+        <button type="button" aria-pressed="false" data-weight="700" data-style="italic">Bold italic</button>
+      </div>
+    </div>
+    <textarea class="screen" spellcheck="false" aria-label="Sample text, editable">def average(values: list[float]) -> float:
+    if not values:  # empty list → 0
+        return 0.0
+    return sum(values) / len(values)  # {i}[l]1|0O
+
+Il1| O0o '`" ;:., « Ça marche ! »</textarea>
+    <p class="hint">Type your own text. 11 pt (15 px) is a particularly crisp size.</p>
+  </section>
+
+  <h2>Characters that must not be confused</h2>
+  <ul class="pairs" aria-label="Characters that look alike in many fonts">
+    <li>I l 1 |</li>
+    <li>0 O o</li>
+    <li>' ` "</li>
+    <li>; : , .</li>
+  </ul>
+  <p class="pairs-note">The zero is slashed and narrower than the O; <code>i</code>, <code>j</code>, <code>l</code> and <code>r</code> are redrawn with serifs to fill their cell.</p>
+
+  <h2>Download</h2>
+  <ul class="files">
+    <li><a href="fonts/LucioleMono-Regular.ttf" download>LucioleMono-Regular.ttf <span class="size">137 KB</span></a></li>
+    <li><a class="b" href="fonts/LucioleMono-Bold.ttf" download>LucioleMono-Bold.ttf <span class="size">141 KB</span></a></li>
+    <li><a class="i" href="fonts/LucioleMono-Italic.ttf" download>LucioleMono-Italic.ttf <span class="size">142 KB</span></a></li>
+    <li><a class="b i" href="fonts/LucioleMono-BoldItalic.ttf" download>LucioleMono-BoldItalic.ttf <span class="size">146 KB</span></a></li>
+  </ul>
+
+  <h2>Install</h2>
+  <ol class="steps">
+    <li>Download the four files above.</li>
+    <li>On Linux, copy them to <code>~/.local/share/fonts/</code> and run <code>fc-cache -f</code>. On macOS or Windows, open each file and choose “Install”.</li>
+    <li>Choose “Luciole Mono” in your terminal or editor settings, then restart it.</li>
+  </ol>
+
+  <h2>About</h2>
+  <p>Luciole was designed for visually impaired readers by Laurent Bourcellier and Jonathan Perez, at the Centre Technique Régional pour la Déficience Visuelle (<a href="https://typographies.fr">typographies.fr</a>). Luciole Mono keeps its design and fits it to a 620-unit grid: wide letters are compressed then thickened back, narrow letters are redrawn, and the bold is a lighter semi-bold so that counters stay open.</p>
+  <p>Luciole Mono is a <strong>derivative of Luciole</strong>. It is an independent project, neither made nor endorsed by the authors of Luciole. Known limitations and the full list of changes are in the <a href="https://github.com/scriptor-pro/luciole-mono#readme">README</a>.</p>
+</main>
+
+<footer>
+  <p>Luciole © Laurent Bourcellier &amp; Jonathan Perez – 2019. Luciole Mono and its build scripts are released under the same license, <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0</a>.</p>
+  <p>Source code: <a href="https://github.com/scriptor-pro/luciole-mono">github.com/scriptor-pro/luciole-mono</a></p>
+</footer>
+
+</div>
+<script src="demo.js"></script>
+</body>
+</html>
