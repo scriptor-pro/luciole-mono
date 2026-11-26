@@ -57,3 +57,48 @@ def test_split_accent_tolerates_off_by_one():
     acc = [[(80, -1), (280, -1), (280, 544), (80, 544)], [(100, 700), (200, 700), (150, 800)]]
     accent, dx = split_accent(acc, base)
     assert dx == 0 and accent == [acc[1]]
+
+
+def _body_stem(ttfont, ch):
+    """Épaisseur des traits du plus grand morceau d'encre (la lettre sans
+    son accent)."""
+    from lib.scanline import ink_groups, median_stem
+    glyf = ttfont["glyf"]
+    coords, ends, flags = glyf[ttfont.getBestCmap()[ord(ch)]].getCoordinates(glyf)
+    contours, start = [], 0
+    for end in ends:
+        contours.append([(coords[j][0], coords[j][1], bool(flags[j] & 1))
+                         for j in range(start, end + 1)])
+        start = end + 1
+    def area(g):
+        xs = [p[0] for i in g for p in contours[i]]
+        ys = [p[1] for i in g for p in contours[i]]
+        return (max(xs) - min(xs)) * (max(ys) - min(ys))
+    body = max(ink_groups(contours), key=area)
+    return median_stem([contours[i] for i in body])
+
+
+def _accented_pairs():
+    import unicodedata
+    from fontTools.ttLib import TTFont
+    cmap = TTFont(config.SOURCE).getBestCmap()
+    pairs = []
+    for code in sorted(cmap):
+        parts = unicodedata.decomposition(chr(code)).split()
+        if not parts or parts[0].startswith("<"):
+            continue
+        base = int(parts[0], 16)
+        if base in cmap and chr(base) not in "ijlrıȷ" and chr(base).isalpha():
+            pairs.append((chr(code), chr(base)))
+    return pairs
+
+
+@pytest.mark.parametrize("ch,base", _accented_pairs())
+def test_accented_body_as_heavy_as_base(font, source, ch, base):
+    """Ã, Ą, ď… : le garde-fou qui sépare les morceaux ne doit pas amaigrir
+    toute la lettre (en gras, Ã avait des fûts de 100 contre 250 pour A)."""
+    want = _body_stem(source, ch) / _body_stem(source, base)
+    got = _body_stem(font, ch) / _body_stem(font, base)
+    # 0,8 : dans ď, le caron posé à droite prend de la place, le d est plus
+    # compressé que d seul (0,82 en gras)
+    assert got >= 0.8 * want, (got, want)

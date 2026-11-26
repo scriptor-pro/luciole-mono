@@ -39,11 +39,14 @@ def fit_wide(glyph, room=None):
 
     Les glyphes de config.CONDENSE_EXTEND (fûts verticaux purs, comme m)
     sont condensés par condenseExtend, qui rétrécit les contreformes, si
-    leurs fûts tiennent dans la place. Sinon on met à l'échelle d'un facteur k
-    puis on épaissit horizontalement de EMBOLDEN·trait·(1 − k), où trait est
-    l'épaisseur propre au glyphe (mesurée), sans jamais réduire l'espace
-    intérieur médian sous MIN_GAP (sinon le glyphe fait une tache) : si cette
-    limite joue, k est recalculé pour que k·W + k·gap − MIN_GAP = place."""
+    leurs fûts tiennent dans la place. Sinon, les accents sont mis de côté
+    avant toute mesure (_split_parts) :
+    - au-dessus ou au-dessous de la lettre (Ã, Ö) : réduits comme elle, pas
+      épaissis ;
+    - à côté (caron de ď, apostrophe de ŉ) : réduits d'un facteur uniforme,
+      leur place est réservée, puis ils sont reposés à au moins SEPARATION
+      de la lettre.
+    La lettre seule passe par _fit_body."""
     room = room or config.CELL - 2 * config.MARGIN
     width = ink_width(glyph)
     if width <= room:
@@ -51,32 +54,68 @@ def fit_wide(glyph, room=None):
     if glyph.glyphname in config.CONDENSE_EXTEND and _condense_counters(glyph, room, width):
         pass
     else:
-        min_gap = config.MIN_GAP * STEM
-        gap = median_gap(_flagged(glyph), q=config.GAP_PERCENTILE)
-        own = config.EMBOLDEN * (median_stem(_flagged(glyph)) or STEM)
-        if own >= width / 2:                 # forme pleine (tiret, pavé)
-            k, delta = room / width, 0
-        else:
-            k = max((room - own) / (width - own), 0.2)
-            delta = own * (1 - k)
-        if gap is not None and delta > k * gap - min_gap:
-            k = min((room + min_gap) / (width + gap), room / width) \
-                if k * gap > min_gap else room / width
-            delta = max(k * gap - min_gap, 0)
-        glyph.transform(psMat.scale(k, 1.0))
-        marks = _take_marks(glyph)          # accents : réduits, pas épaissis
-        if delta >= 4:
-            _embolden_keeping_counters(glyph, delta)
+        marks, sides = _split_parts(glyph)
+        ks = max(config.SIDE_MIN_SCALE, min(1.0, room / width))
+        body_room = room
+        for contours, box, right, gap in sides:
+            pivot = box[0] if right else box[2]
+            for c in contours:
+                c.transform(psMat.compose(psMat.translate(-pivot, -box[3]), psMat.compose(
+                    psMat.scale(ks), psMat.translate(pivot, box[3]))))
+            body_room -= ks * (box[2] - box[0]) + max(config.SEPARATION, ks * gap)
+        k = _fit_body(glyph, body_room)
         layer = glyph.foreground
         for contour in marks:
+            contour.transform(psMat.scale(k, 1.0))
             layer += contour
+        x0, _, x1, _ = layer.boundingBox()
+        for contours, box, right, gap in sides:
+            sx0 = min(c.boundingBox()[0] for c in contours)
+            sx1 = max(c.boundingBox()[2] for c in contours)
+            sep = max(config.SEPARATION, ks * gap)
+            dx = (x1 + sep - sx0) if right else (x0 - sep - sx1)
+            for c in contours:
+                c.transform(psMat.translate(dx, 0))
+                layer += c
         glyph.foreground = layer
         rest = ink_width(glyph)
-        if rest > room:
+        if rest > room:              # marques plus larges que la lettre (⁂)
             glyph.transform(psMat.scale(room / rest, 1.0))
     glyph.removeOverlap()
     glyph.correctDirection()
     glyph.round()
+
+
+def _fit_body(glyph, room):
+    """Met la lettre (sans accents) dans room : échelle horizontale k puis
+    épaississement de EMBOLDEN·trait·(1 − k), où trait est l'épaisseur propre
+    au glyphe (mesurée), sans réduire l'espace intérieur médian sous MIN_GAP
+    (sinon tache) : si cette limite joue, k est recalculé pour que
+    k·W + k·gap − MIN_GAP = place. Renvoie le facteur horizontal total
+    (appliqué autour de x = 0), pour les accents."""
+    width = ink_width(glyph)
+    if width <= room:
+        return 1.0
+    min_gap = config.MIN_GAP * STEM
+    gap = median_gap(_flagged(glyph), q=config.GAP_PERCENTILE)
+    own = config.EMBOLDEN * (median_stem(_flagged(glyph)) or STEM)
+    if own >= width / 2:                 # forme pleine (tiret, pavé)
+        k, delta = room / width, 0
+    else:
+        k = max((room - own) / (width - own), 0.2)
+        delta = own * (1 - k)
+    if gap is not None and delta > k * gap - min_gap:
+        k = min((room + min_gap) / (width + gap), room / width) \
+            if k * gap > min_gap else room / width
+        delta = max(k * gap - min_gap, 0)
+    glyph.transform(psMat.scale(k, 1.0))
+    if delta >= 4:
+        _embolden_keeping_counters(glyph, delta)
+    rest = ink_width(glyph)
+    if rest > room:
+        glyph.transform(psMat.scale(room / rest, 1.0))
+        k *= room / rest
+    return k
 
 
 def _contour_count(glyph):
@@ -85,32 +124,66 @@ def _contour_count(glyph):
     return len(probe)
 
 
-def _take_marks(glyph):
-    """Retire et renvoie les accents : morceaux d'encre entièrement au-dessus
-    ou au-dessous du plus grand (trémas de Ä Ö Ẅ, accents de Ő Ű). Épaissis
-    avec la lettre, les points d'un tréma se soudaient en barre."""
+def _split_parts(glyph):
+    """Retire du glyphe ses accents et les renvoie : (marques, latéraux).
+
+    - marques : morceaux entièrement au-dessus ou au-dessous du plus grand
+      (trémas de Ä Ö, tilde de Ã, anneau de Å). Épaissis avec la lettre, les
+      points d'un tréma se soudaient ; mesurés avec elle, ils faisaient
+      croire à des traits plus fins.
+    - latéraux : petits morceaux (moins de SIDE_ACCENT_AREA de la lettre)
+      entièrement à droite ou à gauche (caron de ď, apostrophe de ŉ), en
+      (contours, boîte, à_droite, écart à la lettre).
+    Les morceaux de même taille (points de …, chevrons de «) restent."""
     contours = list(glyph.foreground)
     flagged = _flagged(glyph)
     groups = ink_groups(flagged)
     if len(groups) < 2:
-        return []
+        return [], []
 
     def box(group):
         pts = [p for i in group for p in flagged[i]]
         return (min(p[0] for p in pts), min(p[1] for p in pts),
                 max(p[0] for p in pts), max(p[1] for p in pts))
-    body = box(max(groups, key=lambda g: (lambda b: (b[2] - b[0]) * (b[3] - b[1]))(box(g))))
-    marks = {i for g in groups for i in g
-             if box(g)[1] >= body[3] or box(g)[3] <= body[1]}
-    if not marks:
-        return []
-    keep = fontforge.layer()
-    keep.is_quadratic = glyph.foreground.is_quadratic
-    for i, c in enumerate(contours):
-        if i not in marks:
-            keep += c
-    glyph.foreground = keep
-    return [contours[i].dup() for i in sorted(marks)]
+
+    def area(b):
+        return (b[2] - b[0]) * (b[3] - b[1])
+    main = max(groups, key=lambda g: area(box(g)))
+    body = box(main)
+    marks, sides, taken = [], [], set()
+    for g in groups:
+        if g is main:
+            continue
+        b = box(g)
+        if b[1] >= body[3] or b[3] <= body[1]:
+            marks += [contours[i].dup() for i in g]
+        elif area(b) < config.SIDE_ACCENT_AREA * area(body) and (b[0] >= body[2] or b[2] <= body[0]):
+            right = b[0] >= body[2]
+            sides.append(([contours[i].dup() for i in g], b, right,
+                          b[0] - body[2] if right else body[0] - b[2]))
+        else:
+            continue
+        taken.update(g)
+    # les morceaux d'un même côté (º et son trait dans №) forment un bloc :
+    # une seule place réservée, un seul déplacement
+    merged = {}
+    for contours_, b, right, gap in sides:
+        if right in merged:
+            c0, b0, _, g0 = merged[right]
+            merged[right] = (c0 + contours_, (min(b0[0], b[0]), min(b0[1], b[1]),
+                                              max(b0[2], b[2]), max(b0[3], b[3])),
+                             right, min(g0, gap))
+        else:
+            merged[right] = (contours_, b, right, gap)
+    sides = list(merged.values())
+    if taken:
+        keep = fontforge.layer()
+        keep.is_quadratic = glyph.foreground.is_quadratic
+        for i, c in enumerate(contours):
+            if i not in taken:
+                keep += c
+        glyph.foreground = keep
+    return marks, sides
 
 
 def _separation(glyph):

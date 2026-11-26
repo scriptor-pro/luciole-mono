@@ -32,6 +32,8 @@ STYLE_OVERRIDES = {"Bold": {"ZERO_INK": 0.80, "I_INK": 0.65}}
 GAP_PERCENTILE = 0.75            # espace intérieur pris en compte (formes en coin : w, v)
 VISIBLE_GAP = 17                 # espace blanc encore visible (unités)
 SEPARATION = 25                  # blanc minimal entre deux morceaux d'encre (points, chevrons)
+SIDE_ACCENT_AREA = 0.35          # accent latéral (ď, ŉ) : boîte < 35 % de celle de la lettre
+SIDE_MIN_SCALE = 0.6             # réduction maximale d'un accent latéral
 KEEP_GAPS = 0.6                  # part des espaces visibles gardés à l'épaississement
                                  # (tests : 0,5 ; sans cela le M gras se bouche)
 
