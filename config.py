@@ -6,7 +6,8 @@ import os
 # leur STYLE ne sert qu'aux planches (comparaison avec la source).
 STYLE = os.environ.get("LUCIOLE_STYLE", "Regular")
 SOURCE_FILE = {"BoldItalic": "Bold_Italic"}
-LUCIOLE_DIR = os.path.expanduser("~/.local/share/fonts/typographies.fr/TrueType/Luciole")
+# Polices Luciole d'origine (CC-BY 4.0), fournies dans le dépôt
+LUCIOLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sources", "luciole")
 ORIGINAL = {s: f"{LUCIOLE_DIR}/Luciole_{SOURCE_FILE.get(s, s)}.ttf"
             for s in ("Regular", "Bold", "Italic", "BoldItalic")}
 # Graisses dont la source est fabriquée par make_source.py : (graisse de

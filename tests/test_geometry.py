@@ -1,11 +1,10 @@
-import os
-
 import pytest
 from fontTools.ttLib import TTFont
 
+import config
 from lib.geometry import measure
 
-DIR = os.path.expanduser("~/.local/share/fonts/typographies.fr/TrueType/Luciole")
+DIR = config.LUCIOLE_DIR
 
 
 @pytest.mark.parametrize("style,expected", [
