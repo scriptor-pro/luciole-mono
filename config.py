@@ -6,9 +6,16 @@ import os
 # leur STYLE ne sert qu'aux planches (comparaison avec la source).
 STYLE = os.environ.get("LUCIOLE_STYLE", "Regular")
 SOURCE_FILE = {"BoldItalic": "Bold_Italic"}
-SOURCE = os.path.expanduser(
-    "~/.local/share/fonts/typographies.fr/TrueType/Luciole/"
-    f"Luciole_{SOURCE_FILE.get(STYLE, STYLE)}.ttf")
+LUCIOLE_DIR = os.path.expanduser("~/.local/share/fonts/typographies.fr/TrueType/Luciole")
+ORIGINAL = {s: f"{LUCIOLE_DIR}/Luciole_{SOURCE_FILE.get(s, s)}.ttf"
+            for s in ("Regular", "Bold", "Italic", "BoldItalic")}
+# Graisses dont la source est fabriquée par make_source.py : (graisse de
+# Luciole d'origine, épaississement des traits). Le gras de Luciole Mono est
+# un demi-gras : Luciole Bold (fûts 200) remplissait trop la cellule de 620
+# (0 bouché, m M W tassés) ; Regular + 44 donne des fûts de 156.
+DERIVED = {"Bold": ("Regular", 44)}
+SOURCE = (os.path.join(os.path.dirname(os.path.abspath(__file__)), "build", f"source-{STYLE}.ttf")
+          if STYLE in DERIVED else ORIGINAL.get(STYLE))
 CELL = 620
 NEAR_TOLERANCE = 0.10
 MARGIN = 30                      # approche minimale des glyphes compressés
@@ -28,7 +35,7 @@ I_INK = 1.0                      # largeur d'encre de I (× place)
 
 # Réglages propres à une graisse : en gras, I et 0 remplissent la cellule
 # comme 1 et O ; on les resserre pour garder les différences de silhouette.
-STYLE_OVERRIDES = {"Bold": {"ZERO_INK": 0.80, "I_INK": 0.65}}
+STYLE_OVERRIDES = {"Bold": {"ZERO_INK": 0.83, "I_INK": 0.8}}
 GAP_PERCENTILE = 0.75            # espace intérieur pris en compte (formes en coin : w, v)
 VISIBLE_GAP = 17                 # espace blanc encore visible (unités)
 SEPARATION = 25                  # blanc minimal entre deux morceaux d'encre (points, chevrons)

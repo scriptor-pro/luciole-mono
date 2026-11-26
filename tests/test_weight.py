@@ -59,11 +59,13 @@ def _ink(path, ch):
 
 # ½ ¾ ¼ ™ № ⇔ → : rares, sans place pour s'épaissir (les flèches ont la même
 # graisse dans les deux sources)
-BOLD_CHECKED = list("mw@Œ%‰&#noaeHO0")
-# M et W : leurs encoches étroites ne laissent pas la place d'épaissir sans
-# les boucher (test_wide_glyph_keeps_its_gaps) ; ils restent au moins aussi
-# noirs que le regular.
-BOLD_LIGHT = list("MW")
+BOLD_CHECKED = list("m@Œ&#noaeHO0")
+# Le gras est un demi-gras (fûts 156). M, W, w : leurs encoches étroites ne
+# laissent pas la place d'épaissir sans les boucher
+# (test_wide_glyph_keeps_its_gaps) ; % et ‰ : l'épaisseur de leurs anneaux
+# est bornée par la contreforme minimale (lib/symbols.py). Ils restent au
+# moins aussi noirs que le regular.
+BOLD_LIGHT = list("MWw%‰")
 
 
 @pytest.mark.skipif(config.STYLE != "Bold", reason="gras seulement")

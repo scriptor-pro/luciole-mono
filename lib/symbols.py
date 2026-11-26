@@ -23,7 +23,7 @@ from lib.scanline import min_distance
 REDESIGNED = ("percent", "perthousand")
 RING_STROKE = 1.0         # épaisseur visée des anneaux, en fraction du fût
 BAR_EMBOLDEN = 0.125     # épaississement de la barre oblique (× fût : 14 en Regular)
-COUNTER_PER_STEM = 0.35   # contreforme minimale réduite par unité de fût au-delà de 112
+COUNTER_PER_STEM = 0.6    # contreforme minimale réduite par unité de fût au-delà de 112
 CLEARANCE = 25            # blanc minimal entre barre et anneaux (sinon soudés à petite taille)
 BAR_SHEAR_STEP, BAR_SHEAR_MAX = 0.02, 0.3   # cisaillement de la barre tant qu'elle frôle un anneau
 

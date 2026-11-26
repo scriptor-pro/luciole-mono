@@ -6,6 +6,7 @@ ITALICS = $(patsubst RegularItalic,Italic,$(addsuffix Italic,$(STYLES)))
 build:
 	@for s in $(STYLES); do \
 	  echo "== $$s"; \
+	  LUCIOLE_STYLE=$$s fontforge -quiet -script make_source.py || exit 1; \
 	  LUCIOLE_STYLE=$$s fontforge -quiet -script build.py || exit 1; \
 	  LUCIOLE_STYLE=$$s .venv/bin/python finalize.py || exit 1; \
 	done

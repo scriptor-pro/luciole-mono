@@ -8,7 +8,7 @@ Luciole a été conçue pour les personnes malvoyantes par Laurent Bourcellier e
 
 Luciole © Laurent Bourcellier & Jonathan Perez, distribuée sous licence [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/legalcode.fr).
 
-Luciole Mono (Regular, Bold, Italic et Bold Italic) est une **œuvre dérivée** de Luciole (Regular, Bold, Italic, Bold Italic), distribuée sous la même licence CC-BY 4.0. Modifications apportées :
+Luciole Mono (Regular, Bold, Italic et Bold Italic) est une **œuvre dérivée** de Luciole Regular, distribuée sous la même licence CC-BY 4.0. Modifications apportées :
 
 - tous les glyphes ont une largeur de 620 unités (1000 unités/em) ;
 - les glyphes larges (`m`, `w`, `M`, `W`, `@`…) sont compressés, puis épaissis horizontalement pour retrouver l'épaisseur de leurs traits, sans jamais refermer leurs espaces intérieurs. Dans le Regular, les fûts de `m` sont conservés tels quels (`condenseExtend`) ;
@@ -16,10 +16,11 @@ Luciole Mono (Regular, Bold, Italic et Bold Italic) est une **œuvre dérivée**
 - les lettres accentuées sur ces bases sont reconstruites ;
 - `%` et `‰` sont redessinés : leurs anneaux sont réduits mais restent ronds, placés de part et d'autre de la barre oblique ;
 - le zéro barré de Luciole (`zero.slash`) devient le `0` par défaut, plus étroit que `O` ;
-- en gras, `I` est resserré pour se distinguer du `1` ;
+- le gras est un **demi-gras** fabriqué à partir de Luciole Regular (`make_source.py`) : chaque trait est épaissi de 44 unités (fûts de 156, entre Regular 112 et Luciole Bold 200), chaque accent à part pour garder son écart à la lettre. Luciole Bold remplissait trop la cellule (creux du `0` bouché, `m M W` tassés) ; le demi-gras a aussi tous les caractères du Regular ;
+- en gras, `I` et `0` sont resserrés pour se distinguer de `1` et `O` ;
 - Italic et Bold Italic sont les versions droites penchées de 15°, comme Luciole Italic (une oblique du droit) : elles gardent tous les redessins ci-dessus ;
 - en épaississant, les accents ne sont pas épaissis et les morceaux d'un glyphe restent séparés (trémas, points de `…`, chevrons de `«`) ;
-- `β` est ajouté au cmap du gras (Luciole Bold ne le range que sous U+A7B5), et la graisse du gras est déclarée 700 ;
+- la graisse du gras est déclarée 700, pour que terminaux et éditeurs l'emploient pour le texte en gras ;
 - le crénage (`kern`), les ligatures (`liga`) et le hinting TrueType ont été retirés, et les métadonnées sont celles d'une police monospace.
 
 ## Construire
@@ -28,7 +29,8 @@ Dépendances : FontForge (≥ 20230101), Python 3, et `fonttools`, `pillow`, `py
 
 ```sh
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-make all         # pour chaque graisse : FontForge → dist/LucioleMono-<graisse>.ttf,
+make all         # pour chaque graisse : source (make_source.py, gras seulement),
+                 # FontForge → dist/LucioleMono-<graisse>.ttf,
                  # puis italicize.py (Italic, BoldItalic), puis les tests
 make specimen    # planches de contrôle dans specimens/
 make install     # copie dans ~/.local/share/fonts/LucioleMono/ et fc-cache
@@ -38,10 +40,10 @@ Les réglages (largeur de cellule, marge, épaississement, réglages propres au 
 
 ## Limites connues
 
-- En gras, la cellule (620) est étroite pour Luciole Bold (son `n` fait 686) : `m`, `M`, `W` et les symboles larges ont des traits plus fins que les autres lettres grasses : l'épaississement s'arrête avant de boucher leurs encoches (bas du `M`).
+- En gras, `M`, `W`, `w` et les symboles larges sont plus fins que les autres lettres grasses : l'épaississement s'arrête avant de boucher leurs encoches (bas du `M`). `%` et `‰` ont presque la graisse du Regular (anneaux limités par leur contreforme).
 - `⇔` est peu lisible dans les deux graisses.
 - En gras, quelques glyphes rares gardent des parties soudées : fractions (`½ ¼ ¾`…), ligatures typographiques (`ﬁ ﬂ ﬀ`…) et `℗`. Les fractions et `№` sont un peu plus maigres que leurs voisins, pour rester lisibles.
-- Le gras est très noir : le creux du `0` est étroit, et les diagonales épaissies montrent de petites marches en grande taille.
+- Les diagonales des glyphes larges épaissis montrent de petites marches en grande taille.
 - Les italiques débordent un peu de la cellule en haut à droite et en bas à gauche, comme toute italique monospace.
 - `ł`, `į`, `ⁱ` et `ℓ` gardent le dessin d'origine, centré : leur accent est soudé à la lettre dans Luciole.
 
